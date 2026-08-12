@@ -33,6 +33,15 @@ export function rateVo2max(vo2, age, sex) {
   return bandRating(vo2, bands);
 }
 
+// Daniels & Gilbert VDOT from a 5k race time (minutes): the standard
+// running-performance estimate of VO2max.
+export function vdotFrom5k(minutes) {
+  const v = 5000 / minutes; // m/min
+  const vo2 = -4.6 + 0.182258 * v + 0.000104 * v * v;
+  const frac = 0.8 + 0.1894393 * Math.exp(-0.012778 * minutes) + 0.2989558 * Math.exp(-0.1932605 * minutes);
+  return vo2 / frac;
+}
+
 export function rateRestingHr(hr) {
   // Lower is better: <60 excellent, 60-69 good, 70-79 fair, 80-89 poor, 90+ very poor
   if (hr < 60) return 4;
@@ -56,11 +65,47 @@ export function ratePlank(seconds) {
   return bandRating(seconds, [15, 30, 60, 120]);
 }
 
+export function ratePullups(count, age, sex) {
+  const decades = Math.max(0, (age - 25) / 10);
+  const base = sex === 'female' ? [1, 2, 5, 10] : [3, 6, 10, 15];
+  const decline = sex === 'female' ? 0.5 : 1;
+  const bands = base.map((t) => Math.max(1, t - decline * decades));
+  return bandRating(count, bands);
+}
+
+// Vertical jump (cm) — a standard field test of lower-body power.
+export function rateVerticalJump(cm, age, sex) {
+  const decades = Math.max(0, (age - 25) / 10);
+  const base = sex === 'female' ? [20, 30, 40, 50] : [30, 40, 50, 60];
+  const bands = base.map((t) => Math.max(5, t - 3 * decades));
+  return bandRating(cm, bands);
+}
+
+// Single-leg stand, eyes open (seconds). Inability to hold 10s is associated
+// with markedly higher all-cause mortality in middle age (Araujo et al., 2022).
+export function rateBalance(seconds) {
+  return bandRating(seconds, [10, 20, 30, 45]);
+}
+
+// Standing toe-touch: a coarse ordinal flexibility screen.
+export const TOE_TOUCH_OPTIONS = [
+  { value: 'knees', label: 'Below my knees', rating: 0 },
+  { value: 'shins', label: 'Mid-shin', rating: 1 },
+  { value: 'ankles', label: 'My ankles', rating: 2 },
+  { value: 'toes', label: 'My toes', rating: 3 },
+  { value: 'palms', label: 'Palms flat on floor', rating: 4 },
+];
+
+export function rateToeTouch(value) {
+  const found = TOE_TOUCH_OPTIONS.find((o) => o.value === value);
+  return found ? found.rating : null;
+}
+
 // Lift ratings by bodyweight multiple (community strength standards, roughly
 // untrained -> novice -> intermediate -> advanced boundaries).
 const LIFT_STANDARDS = {
-  male:   { squat: [0.75, 1.0, 1.25, 1.75], bench: [0.6, 0.8, 1.0, 1.5], deadlift: [1.0, 1.25, 1.5, 2.25] },
-  female: { squat: [0.5, 0.75, 1.0, 1.5],   bench: [0.35, 0.5, 0.7, 1.0], deadlift: [0.7, 1.0, 1.2, 1.75] },
+  male:   { squat: [0.75, 1.0, 1.25, 1.75], bench: [0.6, 0.8, 1.0, 1.5], deadlift: [1.0, 1.25, 1.5, 2.25], press: [0.35, 0.5, 0.65, 0.9], row: [0.5, 0.7, 0.9, 1.2] },
+  female: { squat: [0.5, 0.75, 1.0, 1.5],   bench: [0.35, 0.5, 0.7, 1.0], deadlift: [0.7, 1.0, 1.2, 1.75], press: [0.25, 0.35, 0.45, 0.65], row: [0.35, 0.5, 0.65, 0.9] },
 };
 
 export function rateLift(lift, weightKg, bodyweightKg, sex) {

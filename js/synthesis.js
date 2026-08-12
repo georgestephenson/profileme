@@ -5,7 +5,8 @@
 import { scoreIpip, scoreHH } from './data/ipip.js';
 import { scoreGrooming } from './data/grooming.js';
 import {
-  vo2maxFromCooper, rateVo2max, rateRestingHr, ratePushups, ratePlank, rateLift,
+  vo2maxFromCooper, vdotFrom5k, rateVo2max, rateRestingHr, ratePushups, ratePullups,
+  ratePlank, rateLift, rateVerticalJump, rateBalance, rateToeTouch,
   financeMetrics, rateSavingsRate, rateEmergencyFund, rateDebtToIncome,
   expectedNetWorth, rateDigitSpan, rateReactionTime, cefrPoints,
 } from './data/benchmarks.js';
@@ -45,11 +46,16 @@ export function computeScores(profile) {
     const f = profile.fitness;
     const parts = [];
     if (f.cooperMeters) parts.push(ratingToScore(rateVo2max(vo2maxFromCooper(f.cooperMeters), age, sex)));
+    if (f.fiveKMin) parts.push(ratingToScore(rateVo2max(vdotFrom5k(f.fiveKMin), age, sex)));
     if (f.restingHr) parts.push(ratingToScore(rateRestingHr(f.restingHr)));
     if (f.pushups !== null && f.pushups !== undefined) parts.push(ratingToScore(ratePushups(f.pushups, age, sex)));
+    if (f.pullups !== null && f.pullups !== undefined) parts.push(ratingToScore(ratePullups(f.pullups, age, sex)));
     if (f.plankSec) parts.push(ratingToScore(ratePlank(f.plankSec)));
+    if (f.verticalJumpCm) parts.push(ratingToScore(rateVerticalJump(f.verticalJumpCm, age, sex)));
+    if (f.balanceSec) parts.push(ratingToScore(rateBalance(f.balanceSec)));
+    if (f.toeTouch) parts.push(ratingToScore(rateToeTouch(f.toeTouch)));
     if (f.bodyweightKg) {
-      for (const lift of ['squat', 'bench', 'deadlift']) {
+      for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row']) {
         const w = f[`${lift}Kg`];
         if (w) parts.push(ratingToScore(rateLift(lift, w, f.bodyweightKg, sex)));
       }
@@ -120,8 +126,12 @@ export function computeScores(profile) {
     const uclaTotal = (r.ucla || []).reduce((a, b) => a + b, 0); // 3-9, lower is better
     const lonelinessScore = clamp(((9 - uclaTotal) / 6) * 100, 0, 100);
     const friendScore = clamp((r.closeFriends ?? 0) * 22, 0, 100);
-    const contactScore = clamp((r.weeklyInteractions ?? 0) * 18, 0, 100);
-    scores.relationships = avg([lonelinessScore, friendScore, contactScore]);
+    const contactScore = clamp(
+      ((r.weeklyInteractions ?? 0) + (r.familyContactsPerWeek ?? 0) * 0.5) * 15, 0, 100);
+    const partnerScore = r.partnerStatus === 'partnered' && r.partnerSatisfaction
+      ? clamp(r.partnerSatisfaction * 10, 0, 100)
+      : null;
+    scores.relationships = avg([lonelinessScore, friendScore, contactScore, partnerScore]);
     scores.uclaTotal = uclaTotal;
   } else scores.relationships = null;
 
@@ -164,10 +174,11 @@ const RULES = [
     domain: 'Fitness',
     apply(p, s) {
       const f = p.fitness;
-      if (!f?.cooperMeters && !f?.restingHr) return null;
+      if (!f?.cooperMeters && !f?.restingHr && !f?.fiveKMin) return null;
       const age = p.basics?.age ?? 30, sex = p.basics?.sex ?? 'male';
       const cardioLow =
         (f.cooperMeters && rateVo2max(vo2maxFromCooper(f.cooperMeters), age, sex) <= 1) ||
+        (f.fiveKMin && rateVo2max(vdotFrom5k(f.fiveKMin), age, sex) <= 1) ||
         (f.restingHr && rateRestingHr(f.restingHr) <= 1);
       if (!cardioLow) return null;
       return {

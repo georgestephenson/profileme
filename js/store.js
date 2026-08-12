@@ -12,6 +12,7 @@ const defaults = () => ({
   relationships: null, // { ucla: [1..3 x3], closeFriends, weeklyInteractions }
   goals: null,         // { selected: [goalKey] }
   grooming: null,      // { answers: {itemId: 1..5}, completedAt }
+  settings: null,      // { currency: 'USD' }
 });
 
 let state = load();

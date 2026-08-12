@@ -1,5 +1,6 @@
-import { el, card, numberField, saveBar, statCard } from '../ui.js';
+import { el, card, numberField, selectField, saveBar, statCard } from '../ui.js';
 import { getProfile, update } from '../store.js';
+import { CURRENCIES, getCurrency, setCurrency, money } from '../currency.js';
 import {
   financeMetrics, rateSavingsRate, rateEmergencyFund, rateDebtToIncome,
   expectedNetWorth, RATING_LABELS, ratingClass,
@@ -16,7 +17,14 @@ export function renderFinance(rerender) {
   const container = el('div', {},
     el('h2', {}, 'Finances'),
     el('p', { class: 'view-intro' },
-      'Standard personal-finance health metrics: savings rate, emergency-fund coverage, debt load, and net worth versus an age-and-income expectation. Use whatever currency you think in — only ratios matter.'));
+      'Standard personal-finance health metrics: savings rate, emergency-fund coverage, debt load, and net worth versus an age-and-income expectation. Amounts are never converted — pick your currency once and it is used everywhere money appears.'),
+    card('Currency',
+      selectField({
+        label: 'Display currency',
+        value: getCurrency().code,
+        options: CURRENCIES.map((c) => ({ value: c.code, label: c.label })),
+        onChange: (v) => { setCurrency(v); rerender(); },
+      })));
 
   if (profile.finance) {
     const m = financeMetrics(profile.finance);
@@ -39,7 +47,7 @@ export function renderFinance(rerender) {
       stats.push(statCard({
         label: 'Net worth vs expected',
         value: ratio !== null ? `${(ratio * 100).toFixed(0)}%` : '—',
-        sub: `expected ≈ ${Math.round(expected).toLocaleString()} (age × income ÷ 10)`,
+        sub: `expected ≈ ${money(expected)} (age × income ÷ 10)`,
         tone: ratio === null ? '' : ratio >= 1 ? 'good' : ratio >= 0.5 ? 'ok' : 'bad',
       }));
     }

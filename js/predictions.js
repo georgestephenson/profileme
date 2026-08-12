@@ -2,7 +2,7 @@
 // stated, built from published effect sizes and standard progression models —
 // not point predictions. Where evidence is weak we say "heuristic".
 
-import { vo2maxFromCooper, rateVo2max, ratePushups, rateLift } from './data/benchmarks.js';
+import { vo2maxFromCooper, vdotFrom5k, rateVo2max, ratePushups, ratePullups, rateLift } from './data/benchmarks.js';
 import { normalCdf } from './data/cognitive.js';
 
 const fmt = (n) => Math.round(n).toLocaleString();
@@ -73,8 +73,9 @@ export function strengthPotential(profile) {
 
   const ratings = [];
   if (f.pushups !== null && f.pushups !== undefined) ratings.push(ratePushups(f.pushups, age, sex));
+  if (f.pullups !== null && f.pullups !== undefined) ratings.push(ratePullups(f.pullups, age, sex));
   if (f.bodyweightKg) {
-    for (const lift of ['squat', 'bench', 'deadlift']) {
+    for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row']) {
       if (f[`${lift}Kg`]) ratings.push(rateLift(lift, f[`${lift}Kg`], f.bodyweightKg, sex));
     }
   }
@@ -110,9 +111,9 @@ export function strengthPotential(profile) {
 // over 3-6 months; HIIT adds further gains.
 export function cardioPotential(profile) {
   const f = profile.fitness;
-  if (!f?.cooperMeters) return null;
+  if (!f?.cooperMeters && !f?.fiveKMin) return null;
   const age = profile.basics?.age ?? 30, sex = profile.basics?.sex ?? 'male';
-  const vo2 = vo2maxFromCooper(f.cooperMeters);
+  const vo2 = f.cooperMeters ? vo2maxFromCooper(f.cooperMeters) : vdotFrom5k(f.fiveKMin);
   const rating = rateVo2max(vo2, age, sex);
   const [gLow, gHigh] = rating <= 1 ? [15, 25] : rating === 2 ? [10, 18] : [5, 10];
   return {

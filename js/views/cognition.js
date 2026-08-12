@@ -9,7 +9,7 @@ export function renderCognition(rerender) {
   const container = el('div', {},
     el('h2', {}, 'Cognition'),
     el('p', { class: 'view-intro' },
-      'A cognitive ability battery using item formats validated by the public-domain ICAR project (verbal knowledge, series, matrix reasoning — formats that correlate ~0.8 with gold-standard tests), plus working-memory and reaction-time tasks.'),
+      'A cognitive ability battery using item formats validated by the public-domain ICAR project (verbal knowledge, series, analogies, matrix reasoning — formats that correlate ~0.8 with gold-standard tests), plus working-memory and reaction-time tasks.'),
     el('div', { class: 'callout' },
       'What the estimate means: this battery produces an estimated range, not a clinical IQ. It is untimed and self-administered, our norms are provisional, and scores move with sleep, effort, and retesting. A proper IQ score requires a professionally administered test (WAIS, Stanford-Binet). Treat the range as a rough band — useful signal, not a label. Do the battery once, without looking anything up.'));
 
@@ -48,12 +48,13 @@ export function renderCognition(rerender) {
 
 function batteryTask(saved, rerender) {
   const stage = el('div', {});
-  const cardEl = card('Task 1 — Ability battery (28 items, ~15 min)',
+  const totalItems = SECTIONS.reduce((n, s) => n + s.items.length, 0);
+  const cardEl = card(`Task 1 — Ability battery (${totalItems} items, ~18 min)`,
     el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
       'Three sections. Work quickly but carefully, alone, without looking anything up. Answer every item — an educated guess beats a blank.'),
     stage);
 
-  const answers = { vocab: {}, series: {}, matrix: {} };
+  const answers = Object.fromEntries(SECTIONS.map((s) => [s.key, {}]));
   let sectionIdx = -1;
 
   function start() {

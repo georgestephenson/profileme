@@ -3,8 +3,9 @@ import { getProfile, update } from '../store.js';
 import { computeScores } from '../synthesis.js';
 import {
   earningsPotential, strengthPotential, cardioPotential,
-  wealthProjection, languageTimeline, fmt,
+  wealthProjection, languageTimeline,
 } from '../predictions.js';
+import { money } from '../currency.js';
 
 const GOAL_DEFS = [
   { key: 'earnMore', label: 'Earn more' },
@@ -47,8 +48,8 @@ export function renderGoals(rerender) {
     plans.push(planCard('Earning potential', e
       ? [
           el('p', {},
-            `Current income: ${fmt(e.currentMonthly)}/month. A realistic 5-year range if you work the levers below: `,
-            el('strong', {}, `${fmt(e.projectedLow)}–${fmt(e.projectedHigh)}/month`),
+            `Current income: ${money(e.currentMonthly)}/month. A realistic 5-year range if you work the levers below: `,
+            el('strong', {}, `${money(e.projectedLow)}–${money(e.projectedHigh)}/month`),
             ` (+${e.lowPct}% to +${e.highPct}%).`),
           e.levers.length
             ? el('ul', { style: 'padding-left:1.2rem; font-size:0.9rem;' }, e.levers.map((l) => el('li', { style: 'margin-bottom:0.35rem;' }, l)))
@@ -90,10 +91,10 @@ export function renderGoals(rerender) {
     plans.push(planCard('Wealth projection', w
       ? [
           el('p', {},
-            `On your current path (saving ${fmt(w.currentSave)}/month), 10-year projected net worth: `,
-            el('strong', {}, fmt(w.currentPath)), '. At a 20% savings rate (',
-            `${fmt(w.targetSave)}/month): `, el('strong', {}, fmt(w.targetPath)),
-            ` — a difference of ${fmt(w.gap)}.`),
+            `On your current path (saving ${money(w.currentSave)}/month), 10-year projected net worth: `,
+            el('strong', {}, money(w.currentPath)), '. At a 20% savings rate (',
+            `${money(w.targetSave)}/month): `, el('strong', {}, money(w.targetPath)),
+            ` — a difference of ${money(w.gap)}.`),
           el('p', { style: 'font-size:0.9rem;' },
             'Plan: automate the savings transfer on payday, hold low-cost index funds, and revisit your three largest expense categories once.'),
           basis(w.basis),

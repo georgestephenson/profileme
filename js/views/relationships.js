@@ -1,4 +1,4 @@
-import { el, card, numberField, saveBar } from '../ui.js';
+import { el, card, numberField, selectField, saveBar } from '../ui.js';
 import { getProfile, update } from '../store.js';
 import { UCLA3_ITEMS, UCLA3_OPTIONS } from '../data/benchmarks.js';
 
@@ -8,6 +8,9 @@ export function renderRelationships(rerender) {
     ucla: saved?.ucla ? [...saved.ucla] : [null, null, null],
     closeFriends: saved?.closeFriends ?? null,
     weeklyInteractions: saved?.weeklyInteractions ?? null,
+    familyContactsPerWeek: saved?.familyContactsPerWeek ?? null,
+    partnerStatus: saved?.partnerStatus ?? 'single',
+    partnerSatisfaction: saved?.partnerSatisfaction ?? null,
   };
 
   const container = el('div', {},
@@ -51,6 +54,25 @@ export function renderRelationships(rerender) {
         label: 'Meaningful social interactions per week',
         sub: 'Real conversations, shared meals, activities — not passive scrolling.',
         min: 0, max: 100, value: draft.weeklyInteractions, onInput: (v) => (draft.weeklyInteractions = v),
+      }),
+      numberField({
+        label: 'Family contacts per week',
+        sub: 'Calls, visits, or meals with family members.',
+        min: 0, max: 50, value: draft.familyContactsPerWeek, onInput: (v) => (draft.familyContactsPerWeek = v),
+      }),
+      selectField({
+        label: 'Relationship status',
+        value: draft.partnerStatus,
+        options: [
+          { value: 'single', label: 'Single' },
+          { value: 'partnered', label: 'In a relationship / married' },
+        ],
+        onChange: (v) => (draft.partnerStatus = v),
+      }),
+      numberField({
+        label: 'Relationship satisfaction (1-10, if partnered)',
+        sub: 'Relationship quality — not just having one — is what predicts well-being.',
+        min: 1, max: 10, value: draft.partnerSatisfaction, onInput: (v) => (draft.partnerSatisfaction = v),
       }),
       saveBar(() => {
         if (draft.ucla.some((v) => !v)) {

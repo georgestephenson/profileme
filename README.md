@@ -30,13 +30,13 @@ dashboard with analysis and science-informed recommendations.
 |---|---|---|
 | Personality | IPIP 50-item Big Five factor markers + optional Honesty-Humility (HEXACO) supplement | Public-domain (Goldberg, ipip.ori.org); HEXACO sixth factor (Ashton & Lee) |
 | Body | BMI, waist-to-height ratio | Standard population screens; WHtR < 0.5 guideline |
-| Cardio fitness | Cooper 12-minute run → VO2max, or resting heart rate | Cooper (1968); ACSM-style age/sex ratings |
-| Strength | Push-ups, plank, optional bodyweight-relative lifts | Common strength-standard benchmarks |
-| Finances | Savings rate, emergency fund, debt-to-income, net worth vs. age | Standard personal-finance metrics |
-| Cognition | 28-item ability battery (verbal, series, matrix reasoning) + digit span + reaction time | ICAR-format items (Condon & Revelle, 2014); reported as an estimated range with provisional norms |
+| Cardio fitness | Cooper 12-minute run or 5k time → VO2max, or resting heart rate | Cooper (1968); Daniels & Gilbert VDOT; ACSM-style age/sex ratings |
+| Strength & function | Push-ups, pull-ups, plank, vertical jump, one-leg balance, toe-touch, five barbell lifts (squat/bench/deadlift/press/row) | Strength standards; Araujo et al. (2022) balance-mortality finding |
+| Finances | Savings rate, emergency fund, debt-to-income, net worth vs. age; user-selected display currency | Standard personal-finance metrics |
+| Cognition | 36-item ability battery (verbal knowledge, series, analogies, matrix reasoning) + digit span + reaction time | ICAR-format items (Condon & Revelle, 2014); reported as an estimated range with provisional norms |
 | Career & education | Structured self-report (education, experience, satisfaction, learning, network) | Heuristic, labeled as such |
 | Languages | CEFR self-assessment per language | Council of Europe CEFR framework |
-| Relationships | UCLA-3 loneliness scale + social contact frequency | Hughes et al. (2004) short loneliness scale |
+| Relationships | UCLA-3 loneliness scale, social + family contact, relationship satisfaction | Hughes et al. (2004); relationship-quality well-being findings |
 | Grooming | 8 upkeep-habit items (oral care, SPF, presentation) | Oral-systemic health links; Hughes et al. (2013) sunscreen RCT; person-perception findings |
 
 ## Synthesis

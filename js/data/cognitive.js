@@ -36,6 +36,17 @@ export const SERIES_ITEMS = [
   { q: '2, 6, 12, 20, 30, …', options: ['40', '42', '44', '46'], answer: 1 },
 ];
 
+export const ANALOGY_ITEMS = [
+  { q: 'Kitten is to Cat as Puppy is to:', options: ['Wolf', 'Dog', 'Bone', 'Litter'], answer: 1 },
+  { q: 'Author is to Novel as Composer is to:', options: ['Piano', 'Orchestra', 'Symphony', 'Conductor'], answer: 2 },
+  { q: 'Drought is to Rain as Famine is to:', options: ['Hunger', 'Food', 'Poverty', 'Crops'], answer: 1 },
+  { q: 'Miser is to Generous as Coward is to:', options: ['Afraid', 'Weak', 'Brave', 'Careful'], answer: 2 },
+  { q: 'Scalpel is to Surgeon as Chisel is to:', options: ['Hammer', 'Carpenter', 'Sculptor', 'Stone'], answer: 2 },
+  { q: 'Circle is to Sphere as Square is to:', options: ['Rectangle', 'Cube', 'Box', 'Pyramid'], answer: 1 },
+  { q: 'Ember is to Fire as Echo is to:', options: ['Cave', 'Silence', 'Sound', 'Wall'], answer: 2 },
+  { q: 'Prologue is to Novel as Overture is to:', options: ['Opera', 'Finale', 'Audience', 'Encore'], answer: 0 },
+];
+
 // Matrix reasoning: 3x3 grid of symbol cells, last cell missing.
 export const MATRIX_ITEMS = [
   {
@@ -65,9 +76,10 @@ export const MATRIX_ITEMS = [
 ];
 
 export const SECTIONS = [
-  { key: 'vocab', title: 'Verbal knowledge', items: VOCAB_ITEMS, weight: 0.35 },
-  { key: 'series', title: 'Letter & number series', items: SERIES_ITEMS, weight: 0.35 },
-  { key: 'matrix', title: 'Matrix reasoning', items: MATRIX_ITEMS, weight: 0.30 },
+  { key: 'vocab', title: 'Verbal knowledge', items: VOCAB_ITEMS, weight: 0.25 },
+  { key: 'series', title: 'Letter & number series', items: SERIES_ITEMS, weight: 0.30 },
+  { key: 'analogies', title: 'Verbal analogies', items: ANALOGY_ITEMS, weight: 0.20 },
+  { key: 'matrix', title: 'Matrix reasoning', items: MATRIX_ITEMS, weight: 0.25 },
 ];
 
 // Provisional norms for untimed, self-administered testing: assumed population
