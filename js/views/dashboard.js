@@ -77,18 +77,24 @@ export function renderDashboard() {
       Object.keys(TRAITS).map((k) => traitBar({ name: TRAITS[k], value: t[k] }))));
   }
 
-  // Profile twins (needs Big Five)
-  if (hasPersonality) {
-    const matches = matchFigures(scores.personalityTraits, 3);
+  // Profile twins: matched on every completed dimension — Big Five traits
+  // plus each finished life domain.
+  const userDomains = Object.fromEntries(
+    Object.keys(DOMAIN_LABELS).map((k) => [k, scores[k]]));
+  const twinResult = matchFigures(scores.personalityTraits, userDomains, 3);
+  if (twinResult) {
     container.append(card('You are most like…',
-      matches.map((m, i) =>
+      el('p', { class: 'hint', style: 'margin-bottom:0.8rem;' },
+        `Matched across ${twinResult.dimensions} dimensions of your profile — Big Five traits plus every life domain you have completed. Finish more modules to sharpen the match.`),
+      twinResult.matches.map((m, i) =>
         el('div', { class: 'rec', style: i === 0 ? '' : 'opacity:0.85;' },
-          el('div', { class: 'rec-domain' }, `${m.similarity}% trait similarity`),
+          el('div', { class: 'rec-domain' },
+            `${m.similarity}% profile similarity · their composite: ${m.composite}/100`),
           el('p', {}, el('strong', {}, m.name), ` (${m.era}) — ${m.tag}`),
           el('p', { class: 'rec-why' }, m.note),
           el('p', { class: 'rec-why', style: 'opacity:0.75;' }, BASIS_LABELS[m.basis]))),
       el('p', { class: 'hint' },
-        'For fun, matched on Big Five distance to coarse historiometric estimates of historical figures (expert presidential ratings from Rubenzer & Faschingbauer 2004; cognitive estimates from Cox 1926; otherwise biographical consensus). These are scholarly guesses about people who never took the test — entertainment with footnotes, not science. Living people are excluded because no published estimates exist.')));
+        'For fun. Personalities use published historiometric estimates (expert presidential ratings, Rubenzer & Faschingbauer 2004; cognitive estimates, Cox 1926); life domains are coarse bands from documented biography — "spoke nine languages", "died in debt", "boxed daily". Scholarly guesses about people who never took the tests: entertainment with footnotes, not science. Living people are excluded because no published estimates exist.')));
   }
 
   const recs = getRecommendations(profile, scores);
