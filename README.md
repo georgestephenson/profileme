@@ -11,11 +11,12 @@ dashboard with analysis and science-informed recommendations.
 
 1. **Scientifically honest.** Where a validated, public-domain instrument exists, we
    use it (e.g. the IPIP Big Five markers, Cooper test VO2max estimation, UCLA-3
-   loneliness scale). Where it doesn't, we say so plainly rather than inventing
-   pseudoscience — for example, we do **not** claim to measure IQ, because valid IQ
-   tests (WAIS, Stanford-Binet) are proprietary and must be professionally
-   administered. Our cognition module measures working memory and reaction time and
-   is labeled as exactly that.
+   loneliness scale). The cognition battery uses item formats validated by the
+   public-domain ICAR project (Condon & Revelle, 2014) — formats that correlate
+   ~0.8 with commercial gold-standard tests — and reports an **estimated range**,
+   never a precise IQ, because our norms are provisional and untimed
+   self-administration is not clinical testing. Predictions are ranges with their
+   evidence basis stated inline.
 2. **Privacy-first.** Everything runs in your browser. All data is stored in
    `localStorage` on your device. Nothing is ever sent to a server.
 3. **Traits are not grades.** Personality is reported as a trait profile, not a
@@ -27,11 +28,12 @@ dashboard with analysis and science-informed recommendations.
 
 | Domain | Instrument / method | Basis |
 |---|---|---|
-| Personality | IPIP 50-item Big Five factor markers | Public-domain (Goldberg, ipip.ori.org), extensively validated |
+| Personality | IPIP 50-item Big Five factor markers + optional Honesty-Humility (HEXACO) supplement | Public-domain (Goldberg, ipip.ori.org); HEXACO sixth factor (Ashton & Lee) |
+| Body | BMI, waist-to-height ratio | Standard population screens; WHtR < 0.5 guideline |
 | Cardio fitness | Cooper 12-minute run → VO2max, or resting heart rate | Cooper (1968); ACSM-style age/sex ratings |
 | Strength | Push-ups, plank, optional bodyweight-relative lifts | Common strength-standard benchmarks |
 | Finances | Savings rate, emergency fund, debt-to-income, net worth vs. age | Standard personal-finance metrics |
-| Cognition | Digit span (working memory), simple reaction time | Classic cognitive psychology tasks — explicitly *not* an IQ test |
+| Cognition | 28-item ability battery (verbal, series, matrix reasoning) + digit span + reaction time | ICAR-format items (Condon & Revelle, 2014); reported as an estimated range with provisional norms |
 | Career & education | Structured self-report (education, experience, satisfaction, learning, network) | Heuristic, labeled as such |
 | Languages | CEFR self-assessment per language | Council of Europe CEFR framework |
 | Relationships | UCLA-3 loneliness scale + social contact frequency | Hughes et al. (2004) short loneliness scale |
@@ -44,6 +46,13 @@ recommendation is triggered by your actual data and grounded in well-replicated
 findings (e.g. zone-2 training for low VO2max, implementation intentions for low
 conscientiousness + stalled goals, savings-rate targets, social connection as a
 predictor of well-being).
+
+The **Potential & plans** page turns the profile forward-looking: pick goals
+(earn more, get stronger, improve endurance, build wealth, level up a language)
+and get quantified projections — earnings-uplift ranges from a transparent lever
+model, strength/VO2max gain ranges from published trainability data, 10-year
+compound wealth projections, and FSI-derived language timelines. Every plan
+states its evidence basis and is presented as a range, not a promise.
 
 ## Running it
 

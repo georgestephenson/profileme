@@ -60,11 +60,14 @@ export function computeScores(profile) {
     scores.financeMetrics = m;
   } else scores.finance = null;
 
-  // Cognition
+  // Cognition: battery percentile (when taken) weighs double the mini-tasks.
   if (profile.cognition) {
+    const c = profile.cognition;
     scores.cognition = avg([
-      ratingToScore(rateDigitSpan(profile.cognition.digitSpan)),
-      ratingToScore(rateReactionTime(profile.cognition.reactionMs)),
+      c.battery ? c.battery.percentile : null,
+      c.battery ? c.battery.percentile : null,
+      c.digitSpan ? ratingToScore(rateDigitSpan(c.digitSpan)) : null,
+      c.reactionMs ? ratingToScore(rateReactionTime(c.reactionMs)) : null,
     ]);
   } else scores.cognition = null;
 

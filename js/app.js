@@ -9,14 +9,16 @@ import { renderCognition } from './views/cognition.js';
 import { renderCareer } from './views/career.js';
 import { renderLanguages } from './views/languages.js';
 import { renderRelationships } from './views/relationships.js';
+import { renderGoals } from './views/goals.js';
 
 const ROUTES = [
   { path: '#/', label: 'Synthesis', render: renderDashboard, section: 'Overview', done: () => false },
+  { path: '#/potential', label: 'Potential & plans', render: renderGoals, section: 'Overview', done: () => false },
   { path: '#/basics', label: 'Basics', render: renderBasics, section: 'Profile', done: (p) => !!p.basics?.age },
   { path: '#/personality', label: 'Personality', render: renderPersonality, section: 'Profile', done: (p) => !!p.personality },
   { path: '#/fitness', label: 'Fitness', render: renderFitness, section: 'Profile', done: (p) => !!p.fitness },
   { path: '#/finance', label: 'Finances', render: renderFinance, section: 'Profile', done: (p) => !!p.finance },
-  { path: '#/cognition', label: 'Cognition', render: renderCognition, section: 'Profile', done: (p) => !!(p.cognition?.digitSpan && p.cognition?.reactionMs) },
+  { path: '#/cognition', label: 'Cognition', render: renderCognition, section: 'Profile', done: (p) => !!(p.cognition?.battery || (p.cognition?.digitSpan && p.cognition?.reactionMs)) },
   { path: '#/career', label: 'Career', render: renderCareer, section: 'Profile', done: (p) => !!p.career },
   { path: '#/languages', label: 'Languages', render: renderLanguages, section: 'Profile', done: (p) => !!p.languages?.list?.length },
   { path: '#/relationships', label: 'Relationships', render: renderRelationships, section: 'Profile', done: (p) => !!p.relationships },

@@ -73,6 +73,33 @@ export const ITEMS = [
   { id: 50, text: 'Am full of ideas.', trait: 'O', keyed: 1 },
 ];
 
+// Optional Honesty-Humility supplement: 10 items written in the style of the
+// public-domain IPIP HEXACO scales. Honesty-Humility is the sixth factor from
+// the HEXACO model (Ashton & Lee) and adds predictive power for integrity-
+// related outcomes beyond the Big Five.
+export const HH_ITEMS = [
+  { id: 'hh1', text: "Would never take things that aren't mine.", keyed: 1 },
+  { id: 'hh2', text: 'Would feel very badly for a long time if I were to steal from someone.', keyed: 1 },
+  { id: 'hh3', text: 'Return extra change when a cashier makes a mistake.', keyed: 1 },
+  { id: 'hh4', text: 'Am not interested in impressing people with wealth or status.', keyed: 1 },
+  { id: 'hh5', text: 'Use flattery to get ahead.', keyed: -1 },
+  { id: 'hh6', text: 'Would like to be seen driving around in a very expensive car.', keyed: -1 },
+  { id: 'hh7', text: 'Think I am entitled to more respect than the average person.', keyed: -1 },
+  { id: 'hh8', text: 'Would cheat on my taxes if I knew I could get away with it.', keyed: -1 },
+  { id: 'hh9', text: 'Enjoy showing off my possessions.', keyed: -1 },
+  { id: 'hh10', text: 'Take advantage of others to get what I want.', keyed: -1 },
+];
+
+export function scoreHH(answers) {
+  let sum = 0;
+  for (const item of HH_ITEMS) {
+    const a = answers[item.id];
+    if (!a) return null;
+    sum += item.keyed === 1 ? a : 6 - a;
+  }
+  return Math.round(((sum - 10) / 40) * 100);
+}
+
 export const LIKERT = [
   { value: 1, label: 'Very inaccurate' },
   { value: 2, label: 'Somewhat inaccurate' },

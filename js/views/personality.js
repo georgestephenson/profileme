@@ -1,6 +1,6 @@
 import { el, card, traitBar } from '../ui.js';
 import { getProfile, update } from '../store.js';
-import { ITEMS, LIKERT, TRAITS, TRAIT_DESCRIPTIONS, scoreIpip } from '../data/ipip.js';
+import { ITEMS, LIKERT, TRAITS, TRAIT_DESCRIPTIONS, scoreIpip, HH_ITEMS, scoreHH } from '../data/ipip.js';
 
 export function renderPersonality(rerender) {
   const saved = getProfile().personality;
@@ -12,14 +12,19 @@ export function renderPersonality(rerender) {
       'The 50-item IPIP Big Five factor markers (Goldberg, 1992) — a public-domain, extensively validated measure of the five major personality dimensions. Rate how accurately each statement describes you. There are no good or bad results: this is a profile, not a grade.'));
 
   const traits = saved?.answers ? scoreIpip(saved.answers) : null;
-  if (traits) {
+  const hhScore = saved?.hhAnswers ? scoreHH(saved.hhAnswers) : null;
+  if (traits || hhScore !== null) {
     container.append(card('Your trait profile',
-      Object.keys(TRAITS).map((t) =>
+      traits ? Object.keys(TRAITS).map((t) =>
         el('div', {},
           traitBar({ name: TRAITS[t], value: traits[t] }),
-          el('p', { class: 'hint', style: 'margin-bottom:0.8rem;' }, TRAIT_DESCRIPTIONS[t]))),
+          el('p', { class: 'hint', style: 'margin-bottom:0.8rem;' }, TRAIT_DESCRIPTIONS[t]))) : [],
+      hhScore !== null && el('div', {},
+        traitBar({ name: 'Honesty-Humility (HEXACO supplement)', value: hhScore }),
+        el('p', { class: 'hint', style: 'margin-bottom:0.8rem;' },
+          'Sincerity, fairness, and modesty — the sixth factor from the HEXACO model, a stronger predictor of integrity-related behavior than any Big Five trait.')),
       el('p', { class: 'hint' },
-        'Scores are your position on each 10-item scale (0-100), not population percentiles. Retake any time — answers below are pre-filled.')));
+        'Scores are your position on each scale (0-100), not population percentiles. Retake any time — answers below are pre-filled.')));
   }
 
   const progressNote = el('p', { class: 'progress-note' });
@@ -47,7 +52,7 @@ export function renderPersonality(rerender) {
             opt.label)))));
 
   submitBtn.addEventListener('click', () => {
-    update('personality', { answers, completedAt: new Date().toISOString() });
+    update('personality', { ...(getProfile().personality || {}), answers, completedAt: new Date().toISOString() });
     rerender();
     window.scrollTo(0, 0);
   });
@@ -55,5 +60,39 @@ export function renderPersonality(rerender) {
   refreshProgress();
   container.append(card('Questionnaire', progressNote, ...items,
     el('div', { style: 'margin-top:1rem;' }, submitBtn)));
+
+  // Optional HEXACO Honesty-Humility supplement
+  const hhAnswers = { ...(saved?.hhAnswers || {}) };
+  const hhNote = el('p', { class: 'progress-note' });
+  const hhBtn = el('button', { class: 'btn' }, hhScore !== null ? 'Re-score supplement' : 'Score supplement');
+  function refreshHH() {
+    const n = Object.keys(hhAnswers).length;
+    hhNote.textContent = `${n} / ${HH_ITEMS.length} answered`;
+    hhBtn.disabled = n < HH_ITEMS.length;
+  }
+  const hhItems = HH_ITEMS.map((item, idx) =>
+    el('div', { class: 'likert-item' },
+      el('p', {}, el('span', { class: 'num' }, `${idx + 1}.`), `I… ${item.text}`),
+      el('div', { class: 'likert-options' },
+        LIKERT.map((opt) =>
+          el('label', {},
+            el('input', {
+              type: 'radio', name: `hh-${item.id}`, value: opt.value,
+              checked: hhAnswers[item.id] === opt.value,
+              onchange: () => { hhAnswers[item.id] = opt.value; refreshHH(); },
+            }),
+            opt.label)))));
+  hhBtn.addEventListener('click', () => {
+    update('personality', { ...(getProfile().personality || {}), hhAnswers });
+    rerender();
+    window.scrollTo(0, 0);
+  });
+  refreshHH();
+  container.append(card('Optional — Honesty-Humility supplement (HEXACO)',
+    el('p', { class: 'hint', style: 'margin-bottom:0.4rem;' },
+      'Ten items in the style of the public-domain IPIP HEXACO scales. Adds the sixth personality factor, which predicts integrity-related outcomes beyond the Big Five.'),
+    hhNote, ...hhItems,
+    el('div', { style: 'margin-top:1rem;' }, hhBtn)));
+
   return container;
 }

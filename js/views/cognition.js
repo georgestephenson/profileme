@@ -1,6 +1,7 @@
 import { el, card, statCard } from '../ui.js';
 import { getProfile, update } from '../store.js';
 import { rateDigitSpan, rateReactionTime, RATING_LABELS, ratingClass } from '../data/benchmarks.js';
+import { SECTIONS, scoreBattery } from '../data/cognitive.js';
 
 export function renderCognition(rerender) {
   const saved = getProfile().cognition || {};
@@ -8,11 +9,25 @@ export function renderCognition(rerender) {
   const container = el('div', {},
     el('h2', {}, 'Cognition'),
     el('p', { class: 'view-intro' },
-      'Two classic cognitive-psychology tasks: forward digit span (working memory) and simple visual reaction time (processing speed).'),
+      'A cognitive ability battery using item formats validated by the public-domain ICAR project (verbal knowledge, series, matrix reasoning — formats that correlate ~0.8 with gold-standard tests), plus working-memory and reaction-time tasks.'),
     el('div', { class: 'callout' },
-      'Honesty note: this is not an IQ test. Valid IQ tests (WAIS, Stanford-Binet) are proprietary and must be administered by a professional — any website claiming to measure your IQ is overselling. These tasks measure two narrow, real components of cognition, and scores vary with sleep, caffeine, and practice.'));
+      'What the estimate means: this battery produces an estimated range, not a clinical IQ. It is untimed and self-administered, our norms are provisional, and scores move with sleep, effort, and retesting. A proper IQ score requires a professionally administered test (WAIS, Stanford-Binet). Treat the range as a rough band — useful signal, not a label. Do the battery once, without looking anything up.'));
 
+  // Results
   const stats = [];
+  if (saved.battery) {
+    const b = saved.battery;
+    stats.push(statCard({
+      label: 'Est. cognitive ability',
+      value: `${b.estimateLow}–${b.estimateHigh}`,
+      sub: `IQ-scale band, ~${b.percentile}th percentile (provisional norms)`,
+      tone: b.z > 0.35 ? 'good' : b.z > -0.35 ? 'ok' : 'bad',
+    }));
+    for (const s of SECTIONS) {
+      const p = b.parts[s.key];
+      if (p) stats.push(statCard({ label: s.title, value: `${p.correct}/${p.total}`, sub: 'correct' }));
+    }
+  }
   if (saved.digitSpan) {
     const r = rateDigitSpan(saved.digitSpan);
     stats.push(statCard({ label: 'Digit span', value: `${saved.digitSpan}`, sub: `digits — ${RATING_LABELS[r]} (adult avg ≈ 7 ± 2)`, tone: ratingClass(r) }));
@@ -23,16 +38,101 @@ export function renderCognition(rerender) {
   }
   if (stats.length) container.append(card('Your results', el('div', { class: 'stat-grid' }, stats)));
 
+  container.append(batteryTask(saved, rerender));
   container.append(digitSpanTask(saved, rerender));
   container.append(reactionTask(saved, rerender));
   return container;
+}
+
+// ---------- Ability battery ----------
+
+function batteryTask(saved, rerender) {
+  const stage = el('div', {});
+  const cardEl = card('Task 1 — Ability battery (28 items, ~15 min)',
+    el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
+      'Three sections. Work quickly but carefully, alone, without looking anything up. Answer every item — an educated guess beats a blank.'),
+    stage);
+
+  const answers = { vocab: {}, series: {}, matrix: {} };
+  let sectionIdx = -1;
+
+  function start() {
+    sectionIdx = 0;
+    showSection();
+  }
+
+  function showSection() {
+    const section = SECTIONS[sectionIdx];
+    const itemNodes = section.items.map((item, i) =>
+      el('div', { class: 'likert-item' },
+        item.grid ? matrixGrid(item.grid) : el('p', {}, el('span', { class: 'num' }, `${i + 1}.`), item.q),
+        el('div', { class: 'likert-options' },
+          item.options.map((opt, oi) =>
+            el('label', {},
+              el('input', {
+                type: 'radio', name: `${section.key}-${i}`, value: oi,
+                onchange: () => { answers[section.key][i] = oi; refresh(); },
+              }),
+              opt)))));
+
+    const nextBtn = el('button', { class: 'btn', disabled: true }, sectionIdx < SECTIONS.length - 1 ? 'Next section' : 'Finish & score');
+    function refresh() {
+      nextBtn.disabled = Object.keys(answers[section.key]).length < section.items.length;
+    }
+    nextBtn.addEventListener('click', () => {
+      sectionIdx++;
+      if (sectionIdx < SECTIONS.length) {
+        showSection();
+        cardEl.scrollIntoView();
+      } else {
+        finish();
+      }
+    });
+
+    stage.replaceChildren(
+      el('p', { class: 'progress-note' }, `Section ${sectionIdx + 1} of ${SECTIONS.length}: ${section.title}`),
+      ...itemNodes,
+      el('div', { style: 'margin-top:1rem;' }, nextBtn));
+  }
+
+  function finish() {
+    const sectionScores = {};
+    for (const s of SECTIONS) {
+      sectionScores[s.key] = s.items.reduce((n, item, i) => n + (answers[s.key][i] === item.answer ? 1 : 0), 0);
+    }
+    const result = scoreBattery(sectionScores);
+    update('cognition', { ...getProfile().cognition, battery: { ...result, completedAt: new Date().toISOString() } });
+    rerender();
+    window.scrollTo(0, 0);
+  }
+
+  stage.replaceChildren(
+    saved.battery
+      ? el('p', { class: 'progress-note' }, 'Completed. Retaking inflates scores through practice effects — wait a few months for a meaningful retest.')
+      : el('p', {}, ''),
+    el('button', { class: 'btn', onclick: start }, saved.battery ? 'Retake battery' : 'Start battery'));
+
+  return cardEl;
+}
+
+function matrixGrid(cells) {
+  const wrap = el('div', { style: 'display:grid; grid-template-columns:repeat(3, 72px); gap:6px; margin-bottom:0.7rem;' });
+  for (let i = 0; i < 9; i++) {
+    wrap.append(el('div', {
+      style: 'height:56px; display:flex; align-items:center; justify-content:center; font-size:1.25rem;'
+        + 'border:1px solid var(--border); border-radius:8px; background:var(--bg); letter-spacing:0.05em;',
+    }, i < 8 ? cells[i] : '?'));
+  }
+  return el('div', {},
+    el('p', { class: 'hint' }, 'Which option completes the pattern?'),
+    wrap);
 }
 
 // ---------- Digit span ----------
 
 function digitSpanTask(saved, rerender) {
   const stage = el('div', { class: 'task-stage' });
-  const cardEl = card('Task 1 — Forward digit span',
+  const cardEl = card('Task 2 — Forward digit span',
     el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
       'Digits appear one at a time. Type them back in order. Length increases until you miss twice at the same length.'),
     stage);
@@ -109,10 +209,10 @@ function reactionTask(saved, rerender) {
   let results = [];
   let timeout = null;
   let goTime = null;
-  let state = 'idle'; // idle | waiting | go
+  let state = 'idle'; // idle | waiting | go | between
 
   const panel = el('div', { class: 'rt-panel' }, 'Click to start');
-  const cardEl = card('Task 2 — Reaction time',
+  const cardEl = card('Task 3 — Reaction time',
     el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
       `When the panel turns green, click as fast as you can. ${TRIALS} trials; your score is the median.`),
     panel);
