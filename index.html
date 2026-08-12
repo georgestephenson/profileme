@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProfileMe — Know yourself, systematically</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='none' stroke='%232563eb' stroke-width='10'/><circle cx='50' cy='50' r='14' fill='%232563eb'/></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">◎</span>
+        <div>
+          <h1>ProfileMe</h1>
+          <p class="tagline">Know yourself, systematically</p>
+        </div>
+      </div>
+      <nav id="nav"></nav>
+      <div class="sidebar-footer">
+        <p>All data stays in your browser.<br>Nothing is sent anywhere.</p>
+        <button id="reset-btn" class="btn-danger-ghost">Reset all data</button>
+      </div>
+    </aside>
+    <main id="view" class="view"></main>
+  </div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
