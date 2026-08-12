@@ -53,11 +53,14 @@ single progress gauge. Personality contributes only through a "personality
 assets" subscore — conscientiousness, emotional stability, and honesty-humility,
 the aspects with broadly positive outcomes across contexts — while the rest of
 the trait profile stays ungraded. A **"You are most like…"** feature matches
-your Big Five profile against coarse historiometric estimates of historical
-figures (expert presidential ratings from Rubenzer & Faschingbauer, 2004;
-cognitive estimates from Cox, 1926), clearly labeled as entertainment with
-footnotes. Living people are excluded: no published estimates exist, and
-inventing them would be fabrication.
+your full profile — Big Five traits plus every completed life domain — against
+a dataset of **256 deceased historical figures** spanning science, the arts,
+sport and exploration, and leadership, each with coarse historiometric
+estimates (expert presidential ratings from Rubenzer & Faschingbauer, 2004;
+cognitive estimates from Cox, 1926; otherwise documented biography) and a
+composite score computed with the same formula as the user's. Clearly labeled
+as entertainment with footnotes. Living people are excluded: no published
+estimates exist, and inventing them would be fabrication.
 
 The **Potential & plans** page turns the profile forward-looking: pick goals
 (earn more, get stronger, improve endurance, build wealth, level up a language)

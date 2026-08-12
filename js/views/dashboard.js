@@ -81,11 +81,11 @@ export function renderDashboard() {
   // plus each finished life domain.
   const userDomains = Object.fromEntries(
     Object.keys(DOMAIN_LABELS).map((k) => [k, scores[k]]));
-  const twinResult = matchFigures(scores.personalityTraits, userDomains, 3);
+  const twinResult = matchFigures(scores.personalityTraits, userDomains, 5);
   if (twinResult) {
     container.append(card('You are most like…',
       el('p', { class: 'hint', style: 'margin-bottom:0.8rem;' },
-        `Matched across ${twinResult.dimensions} dimensions of your profile — Big Five traits plus every life domain you have completed. Finish more modules to sharpen the match.`),
+        `Your top matches from 256 historical figures, across ${twinResult.dimensions} dimensions of your profile — Big Five traits plus every life domain you have completed. Finish more modules to sharpen the match.`),
       twinResult.matches.map((m, i) =>
         el('div', { class: 'rec', style: i === 0 ? '' : 'opacity:0.85;' },
           el('div', { class: 'rec-domain' },
