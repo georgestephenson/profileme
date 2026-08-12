@@ -77,6 +77,17 @@ python3 -m http.server 8000
 Then open http://localhost:8000. (A server is needed because the app uses ES
 modules; opening `index.html` directly from disk won't work in all browsers.)
 
+## Deploying to GitHub Pages
+
+A workflow (`.github/workflows/pages.yml`) deploys the site on every push to
+the default branch — no build step needed since the app is plain static files
+with relative paths and hash routing.
+
+One-time setup: in the repo, go to **Settings → Pages** and set **Source** to
+**GitHub Actions**. Then re-run the "Deploy to GitHub Pages" workflow from the
+Actions tab (or push any commit). The site will be live at
+`https://<user>.github.io/profileme/`.
+
 ## Roadmap ideas
 
 - Longitudinal tracking (retake assessments, see trends over time)
