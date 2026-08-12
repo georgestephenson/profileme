@@ -11,6 +11,7 @@ const defaults = () => ({
   languages: null,     // { list: [{ name, level }] }
   relationships: null, // { ucla: [1..3 x3], closeFriends, weeklyInteractions }
   goals: null,         // { selected: [goalKey] }
+  grooming: null,      // { answers: {itemId: 1..5}, completedAt }
 });
 
 let state = load();

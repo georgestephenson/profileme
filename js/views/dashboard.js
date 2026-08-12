@@ -1,7 +1,8 @@
-import { el, card, traitBar } from '../ui.js';
+import { el, card, traitBar, statCard } from '../ui.js';
 import { getProfile } from '../store.js';
-import { computeScores, getRecommendations, DOMAIN_LABELS } from '../synthesis.js';
+import { computeScores, getRecommendations, DOMAIN_LABELS, COMPONENT_LABELS } from '../synthesis.js';
 import { TRAITS } from '../data/ipip.js';
+import { matchFigures, BASIS_LABELS } from '../data/figures.js';
 
 export function renderDashboard() {
   const profile = getProfile();
@@ -20,6 +21,27 @@ export function renderDashboard() {
     container.append(card('Get started',
       el('p', {}, 'Nothing profiled yet. Set your ', el('a', { href: '#/basics' }, 'basics'), ' first, then work through the modules in the sidebar. Each takes 2-10 minutes.')));
     return container;
+  }
+
+  // Composite score
+  if (scores.composite) {
+    const comp = scores.composite;
+    const componentKeys = [...Object.keys(DOMAIN_LABELS), 'personalityAssets']
+      .filter((k) => scores[k] !== null && scores[k] !== undefined);
+    container.append(card('Composite score',
+      el('div', { class: 'stat-grid' },
+        statCard({
+          label: 'Overall', value: `${comp.score}`,
+          sub: `out of 100 — from ${comp.components} of ${comp.total} components`,
+          tone: comp.score >= 60 ? 'good' : comp.score >= 40 ? 'ok' : 'bad',
+        })),
+      el('div', { style: 'margin-top:0.9rem;' },
+        componentKeys.map((k) => traitBar({
+          name: COMPONENT_LABELS[k], value: scores[k],
+          tone: scores[k] >= 60 ? 'good' : scores[k] >= 40 ? 'ok' : 'bad',
+        }))),
+      el('p', { class: 'hint' },
+        'Equal-weighted mean of your completed components. "Personality assets" covers only the aspects with broadly positive outcomes across contexts — conscientiousness, emotional stability, and honesty-humility; the rest of personality stays ungraded because its optima depend on your goals. One number can\'t capture a life — treat this as a progress gauge, not a verdict.')));
   }
 
   // Radar of scored domains
@@ -53,6 +75,20 @@ export function renderDashboard() {
     const t = scores.personalityTraits;
     container.append(card('Personality profile',
       Object.keys(TRAITS).map((k) => traitBar({ name: TRAITS[k], value: t[k] }))));
+  }
+
+  // Profile twins (needs Big Five)
+  if (hasPersonality) {
+    const matches = matchFigures(scores.personalityTraits, 3);
+    container.append(card('You are most like…',
+      matches.map((m, i) =>
+        el('div', { class: 'rec', style: i === 0 ? '' : 'opacity:0.85;' },
+          el('div', { class: 'rec-domain' }, `${m.similarity}% trait similarity`),
+          el('p', {}, el('strong', {}, m.name), ` (${m.era}) — ${m.tag}`),
+          el('p', { class: 'rec-why' }, m.note),
+          el('p', { class: 'rec-why', style: 'opacity:0.75;' }, BASIS_LABELS[m.basis]))),
+      el('p', { class: 'hint' },
+        'For fun, matched on Big Five distance to coarse historiometric estimates of historical figures (expert presidential ratings from Rubenzer & Faschingbauer 2004; cognitive estimates from Cox 1926; otherwise biographical consensus). These are scholarly guesses about people who never took the test — entertainment with footnotes, not science. Living people are excluded because no published estimates exist.')));
   }
 
   const recs = getRecommendations(profile, scores);

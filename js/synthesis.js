@@ -2,7 +2,8 @@
 // rule-based recommendations. Personality is intentionally NOT scored as a
 // single number — traits are a profile, not a grade.
 
-import { scoreIpip } from './data/ipip.js';
+import { scoreIpip, scoreHH } from './data/ipip.js';
+import { scoreGrooming } from './data/grooming.js';
 import {
   vo2maxFromCooper, rateVo2max, rateRestingHr, ratePushups, ratePlank, rateLift,
   financeMetrics, rateSavingsRate, rateEmergencyFund, rateDebtToIncome,
@@ -22,9 +23,21 @@ export function computeScores(profile) {
   const sex = basics?.sex ?? 'male';
   const scores = {};
 
-  // Personality: trait profile only.
+  // Personality: full trait profile (not graded)…
   scores.personalityTraits = profile.personality?.answers
     ? scoreIpip(profile.personality.answers)
+    : null;
+  scores.honestyHumility = profile.personality?.hhAnswers
+    ? scoreHH(profile.personality.hhAnswers)
+    : null;
+
+  // …plus a "personality assets" subscore from the aspects with broadly
+  // positive outcomes: conscientiousness and emotional stability predict
+  // performance, health, and longevity across meta-analyses; honesty-humility
+  // predicts integrity outcomes. Extraversion/agreeableness/openness stay
+  // out — their optima genuinely depend on context and goals.
+  scores.personalityAssets = scores.personalityTraits
+    ? avg([scores.personalityTraits.C, scores.personalityTraits.N, scores.honestyHumility])
     : null;
 
   // Fitness: average of available cardio + strength ratings.
@@ -112,6 +125,19 @@ export function computeScores(profile) {
     scores.uclaTotal = uclaTotal;
   } else scores.relationships = null;
 
+  // Grooming
+  scores.grooming = profile.grooming?.answers
+    ? scoreGrooming(profile.grooming.answers)
+    : null;
+
+  // Composite: equal-weighted mean of every available component. One number
+  // for the gamified overview — the per-domain picture is the real content.
+  const componentKeys = [...Object.keys(DOMAIN_LABELS), 'personalityAssets'];
+  const available = componentKeys.filter((k) => scores[k] !== null && scores[k] !== undefined);
+  scores.composite = available.length >= 3
+    ? { score: Math.round(avg(available.map((k) => scores[k]))), components: available.length, total: componentKeys.length }
+    : null;
+
   return scores;
 }
 
@@ -122,6 +148,12 @@ export const DOMAIN_LABELS = {
   career: 'Career',
   languages: 'Languages',
   relationships: 'Relationships',
+  grooming: 'Grooming',
+};
+
+export const COMPONENT_LABELS = {
+  ...DOMAIN_LABELS,
+  personalityAssets: 'Personality assets',
 };
 
 // ---------- Recommendation engine ----------
@@ -255,6 +287,28 @@ const RULES = [
       return {
         text: 'You spend under 2 hours a week on deliberate skill development. Block a recurring 2-3 hour slot for structured learning in your field with a concrete output (a project, certification, or portfolio piece).',
         why: 'Deliberate, feedback-driven practice — not passive experience — is what drives expertise (Ericsson); years on the job alone plateau quickly.',
+      };
+    },
+  },
+  {
+    domain: 'Grooming',
+    apply(p) {
+      const a = p.grooming?.answers;
+      if (!a || (a.floss ?? 5) >= 4) return null;
+      return {
+        text: 'Floss (or use interdental brushes) daily — it is the highest-leverage two minutes in personal care.',
+        why: 'Periodontal disease is consistently associated with cardiovascular disease and systemic inflammation; interdental cleaning is the intervention gum health depends on.',
+      };
+    },
+  },
+  {
+    domain: 'Grooming',
+    apply(p) {
+      const a = p.grooming?.answers;
+      if (!a || (a.spf ?? 5) >= 4) return null;
+      return {
+        text: 'Add a daily SPF 30+ moisturizer to your morning routine.',
+        why: 'Daily sunscreen measurably slowed skin aging in a randomized controlled trial (Hughes et al., 2013) and cuts skin-cancer risk — the best-evidenced appearance intervention there is.',
       };
     },
   },

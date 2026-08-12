@@ -37,6 +37,7 @@ dashboard with analysis and science-informed recommendations.
 | Career & education | Structured self-report (education, experience, satisfaction, learning, network) | Heuristic, labeled as such |
 | Languages | CEFR self-assessment per language | Council of Europe CEFR framework |
 | Relationships | UCLA-3 loneliness scale + social contact frequency | Hughes et al. (2004) short loneliness scale |
+| Grooming | 8 upkeep-habit items (oral care, SPF, presentation) | Oral-systemic health links; Hughes et al. (2013) sunscreen RCT; person-perception findings |
 
 ## Synthesis
 
@@ -46,6 +47,17 @@ recommendation is triggered by your actual data and grounded in well-replicated
 findings (e.g. zone-2 training for low VO2max, implementation intentions for low
 conscientiousness + stalled goals, savings-rate targets, social connection as a
 predictor of well-being).
+
+A **composite score** (equal-weighted mean of completed components) gives a
+single progress gauge. Personality contributes only through a "personality
+assets" subscore — conscientiousness, emotional stability, and honesty-humility,
+the aspects with broadly positive outcomes across contexts — while the rest of
+the trait profile stays ungraded. A **"You are most like…"** feature matches
+your Big Five profile against coarse historiometric estimates of historical
+figures (expert presidential ratings from Rubenzer & Faschingbauer, 2004;
+cognitive estimates from Cox, 1926), clearly labeled as entertainment with
+footnotes. Living people are excluded: no published estimates exist, and
+inventing them would be fabrication.
 
 The **Potential & plans** page turns the profile forward-looking: pick goals
 (earn more, get stronger, improve endurance, build wealth, level up a language)

@@ -10,6 +10,7 @@ import { renderCareer } from './views/career.js';
 import { renderLanguages } from './views/languages.js';
 import { renderRelationships } from './views/relationships.js';
 import { renderGoals } from './views/goals.js';
+import { renderGrooming } from './views/grooming.js';
 
 const ROUTES = [
   { path: '#/', label: 'Synthesis', render: renderDashboard, section: 'Overview', done: () => false },
@@ -22,6 +23,7 @@ const ROUTES = [
   { path: '#/career', label: 'Career', render: renderCareer, section: 'Profile', done: (p) => !!p.career },
   { path: '#/languages', label: 'Languages', render: renderLanguages, section: 'Profile', done: (p) => !!p.languages?.list?.length },
   { path: '#/relationships', label: 'Relationships', render: renderRelationships, section: 'Profile', done: (p) => !!p.relationships },
+  { path: '#/grooming', label: 'Grooming', render: renderGrooming, section: 'Profile', done: (p) => !!p.grooming },
 ];
 
 const navEl = document.getElementById('nav');
