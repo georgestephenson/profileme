@@ -295,38 +295,64 @@ table.simple th, table.simple td { text-align: left; padding: 0.45rem 0.6rem; bo
 table.simple th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-soft); }
 
 /* ---------- Mobile nav ---------- */
-.nav-toggle { display: none; }
+.mobile-header, .nav-backdrop { display: none; }
 
 @media (max-width: 760px) {
-  .nav-toggle {
-    display: block;
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
     position: fixed;
-    top: 0.7rem;
-    left: 0.7rem;
-    z-index: 60;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    padding: 0 0.9rem;
     background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    z-index: 70;
+  }
+  .nav-toggle {
+    background: none;
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 0.45rem 0.8rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    font-size: 1.05rem;
     color: var(--text);
-    box-shadow: var(--shadow);
     cursor: pointer;
   }
+  .mobile-brand { display: flex; align-items: center; gap: 0.5rem; }
+  .mobile-brand .brand-mark { font-size: 1.3rem; color: var(--accent); }
+  .mobile-brand strong { display: block; font-size: 0.98rem; line-height: 1.15; }
+  .mobile-brand .tagline { display: block; font-size: 0.68rem; color: var(--text-soft); }
+
+  .nav-backdrop {
+    position: fixed;
+    inset: 56px 0 0 0;
+    background: rgba(16, 24, 40, 0.35);
+    z-index: 45;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .nav-backdrop.open { display: block; opacity: 1; pointer-events: auto; }
+
   .layout { flex-direction: column; }
   .sidebar {
     position: fixed;
-    inset: 0 25% 0 0;
+    inset: 56px 25% 0 0;
     min-width: 250px;
-    height: 100vh;
+    height: auto;
     z-index: 50;
     transform: translateX(-105%);
     transition: transform 0.2s ease;
     box-shadow: 4px 0 20px rgba(16, 24, 40, 0.15);
   }
   .sidebar.open { transform: translateX(0); }
-  .view { padding: 3.6rem 1rem 3rem; }
+  /* The top bar carries the brand on mobile — hide the drawer's copy */
+  .sidebar .brand { display: none; }
+  .view { padding: 4.4rem 1rem 3rem; }
 }
 
 /* ---------- Landing hero ---------- */

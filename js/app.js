@@ -66,12 +66,18 @@ function render() {
 }
 
 const sidebar = document.getElementById('sidebar');
+const backdrop = document.getElementById('nav-backdrop');
+function setNavOpen(open) {
+  sidebar.classList.toggle('open', open);
+  backdrop.classList.toggle('open', open);
+}
 document.getElementById('nav-toggle').addEventListener('click', () => {
-  sidebar.classList.toggle('open');
+  setNavOpen(!sidebar.classList.contains('open'));
 });
+backdrop.addEventListener('click', () => setNavOpen(false));
 
 window.addEventListener('hashchange', () => {
-  sidebar.classList.remove('open');
+  setNavOpen(false);
   render();
   window.scrollTo(0, 0);
 });
