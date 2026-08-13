@@ -5,7 +5,7 @@ import {
   rateVerticalJump, rateBalance, rateToeTouch, oneRepMax,
   TOE_TOUCH_OPTIONS, RATING_LABELS, ratingClass,
 } from '../data/benchmarks.js';
-import { EXERCISE_CATALOG, EQUIPMENT_LABELS, findExercise, rateExercise, migrateLegacyFitness } from '../data/exercises.js';
+import { EXERCISE_CATALOG, EQUIPMENT_LABELS, findExercise, rateExercise, migrateLegacyFitness, RECOMMENDED_EXERCISES } from '../data/exercises.js';
 import { MUSCLES, muscleContributions, muscleScores, muscleColor } from '../data/muscles.js';
 import { breakdownRadar } from '../radar.js';
 import { isImperial, kgToLb, lbToKg, cmToIn, inToCm, milesToM, mToMiles, fmtWeight } from '../units.js';
@@ -25,6 +25,10 @@ export function renderFitness(rerender) {
     ...(migrated || {}),
     exercises: [...(migrated?.exercises || [])],
   };
+  const prefilled = draft.exercises.length === 0;
+  if (prefilled) {
+    draft.exercises = RECOMMENDED_EXERCISES.map((id) => ({ id, weightKg: null, reps: null }));
+  }
   const age = profile.basics?.age ?? 30;
   const sex = profile.basics?.sex ?? 'male';
   const bodyweightKg = profile.basics?.weightKg ?? profile.fitness?.bodyweightKg ?? null;
@@ -61,7 +65,10 @@ export function renderFitness(rerender) {
       const r = rateExercise(entry, sex, bodyweightKg);
       if (!ex || r === null) continue;
       if (ex.type === 'reps') {
-        push(ex.name, `${entry.reps}`, 'reps', r);
+        const loadNote = ex.loadable && entry.addedKg
+          ? ` ${entry.addedKg > 0 ? '+' : ''}${imperial ? Math.round(kgToLb(entry.addedKg)) + ' lb' : entry.addedKg + ' kg'}`
+          : '';
+        push(ex.name, `${entry.reps}`, `reps${loadNote}`, r);
       } else {
         const orm = oneRepMax(entry.weightKg, entry.reps || 1);
         push(ex.name, `${fmtWeight(orm)} 1RM`, `${(orm / bodyweightKg).toFixed(2)}× BW`, r);
@@ -122,6 +129,8 @@ export function renderFitness(rerender) {
   const exListEl = el('div', { class: 'row-list' });
 
   function renderExerciseRows() {
+    const unit = imperial ? 'lbs' : 'kg';
+    const numInput = (opts) => el('input', { type: 'number', class: 'exercise-num', ...opts });
     exListEl.replaceChildren(...(
       draft.exercises.length
         ? draft.exercises.map((entry, i) => {
@@ -130,30 +139,42 @@ export function renderFitness(rerender) {
             const inputs = [];
             if (ex.type === 'weight') {
               inputs.push(
-                el('input', {
-                  type: 'number', min: 1, max: imperial ? 1100 : 500, placeholder: imperial ? 'lbs' : 'kg',
+                numInput({
+                  min: 1, max: imperial ? 1100 : 500, placeholder: unit,
                   value: entry.weightKg ? (imperial ? Math.round(kgToLb(entry.weightKg)) : entry.weightKg) : '',
-                  style: 'max-width:80px;',
                   oninput: (e) => {
                     const v = e.target.value === '' ? null : Number(e.target.value);
                     entry.weightKg = v === null ? null : Math.round((imperial ? lbToKg(v) : v) * 10) / 10;
                   },
                 }),
-                el('span', { style: 'color:var(--text-soft); font-size:0.8rem;' }, imperial ? 'lbs ×' : 'kg ×'));
+                el('span', {}, `${unit} ×`));
             }
             inputs.push(
-              el('input', {
-                type: 'number', min: ex.type === 'weight' ? 1 : 0, max: 200, placeholder: 'reps', value: entry.reps ?? '',
-                style: 'max-width:70px;',
+              numInput({
+                min: ex.type === 'weight' ? 1 : 0, max: 200, placeholder: 'reps', value: entry.reps ?? '',
                 oninput: (e) => (entry.reps = e.target.value === '' ? null : Number(e.target.value)),
               }),
-              el('span', { style: 'color:var(--text-soft); font-size:0.8rem;' }, 'reps'));
-            return el('div', { class: 'row' },
-              el('div', { style: 'min-width:180px;' },
-                el('strong', {}, ex.name),
-                el('span', { class: 'badge', style: 'margin-left:0.4rem;' }, EQUIPMENT_LABELS[ex.equipment])),
-              ...inputs,
-              el('button', { class: 'row-remove', onclick: () => { draft.exercises.splice(i, 1); renderExerciseRows(); } }, 'Remove'));
+              el('span', {}, 'reps'));
+            if (ex.loadable) {
+              inputs.push(
+                el('span', {}, 'with'),
+                numInput({
+                  min: imperial ? -220 : -100, max: imperial ? 220 : 100, placeholder: `±${unit}`,
+                  value: entry.addedKg ? (imperial ? Math.round(kgToLb(entry.addedKg)) : entry.addedKg) : '',
+                  oninput: (e) => {
+                    const v = e.target.value === '' ? null : Number(e.target.value);
+                    entry.addedKg = v === null ? null : Math.round((imperial ? lbToKg(v) : v) * 10) / 10;
+                  },
+                }),
+                el('span', {}, `${unit} added (− = assisted)`));
+            }
+            return el('div', { class: 'exercise-row' },
+              el('div', { class: 'exercise-row-head' },
+                el('div', {},
+                  el('strong', {}, ex.name),
+                  el('span', { class: 'badge', style: 'margin-left:0.4rem;' }, EQUIPMENT_LABELS[ex.equipment])),
+                el('button', { class: 'row-remove', onclick: () => { draft.exercises.splice(i, 1); renderExerciseRows(); } }, 'Remove')),
+              el('div', { class: 'exercise-row-inputs' }, ...inputs));
           })
         : [el('p', { class: 'empty-note' }, 'No exercises yet — search above and add the ones you actually do.')]));
   }
@@ -183,9 +204,10 @@ export function renderFitness(rerender) {
   container.append(
     card('Your exercises',
       el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
-        bodyweightKg
-          ? `Search the catalog (${EXERCISE_CATALOG.length} exercises: barbell, dumbbell, Smith machine, calisthenics) and log your best recent set. Weighted lifts are rated relative to your ${fmtWeight(bodyweightKg)} bodyweight; dumbbell entries are per dumbbell.`
-          : 'Search the catalog and log your best recent set. Add your weight in Basics to rate weighted exercises.'),
+        (prefilled ? 'We\'ve added a recommended starter set — fill in what you actually do and remove the rest. ' : '')
+        + (bodyweightKg
+          ? `Search the catalog (${EXERCISE_CATALOG.length} exercises: barbell, dumbbell, Smith machine, calisthenics) and log your best recent set. Weighted lifts are rated relative to your ${fmtWeight(bodyweightKg)} bodyweight; dumbbell entries are per dumbbell. Pull-ups, chin-ups, and dips accept added weight (or negative for assisted).`
+          : 'Search the catalog and log your best recent set. Add your weight in Basics to rate weighted exercises.')),
       datalist,
       el('div', { style: 'display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:0.8rem;' }, searchInput, addBtn),
       exListEl,

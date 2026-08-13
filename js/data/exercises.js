@@ -30,9 +30,9 @@ export const EXERCISE_CATALOG = [
   { id: 'sm-press', name: 'Smith machine shoulder press', equipment: 'smith', type: 'weight', bands: { male: [0.4, 0.55, 0.7, 0.95], female: [0.28, 0.4, 0.5, 0.7] }, muscles: { shoulders: 1, triceps: 0.5 } },
   // --- Calisthenics (max reps in one set) ---
   { id: 'cal-pushup', name: 'Push-ups', equipment: 'calisthenics', type: 'reps', bands: { male: [11, 17, 22, 36], female: [4, 8, 15, 30] }, muscles: { chest: 0.7, triceps: 0.5, shoulders: 0.4, core: 0.3 } },
-  { id: 'cal-pullup', name: 'Pull-ups', equipment: 'calisthenics', type: 'reps', bands: { male: [3, 6, 10, 15], female: [1, 2, 5, 10] }, muscles: { upperBack: 0.9, biceps: 0.8, forearms: 0.6 } },
-  { id: 'cal-chinup', name: 'Chin-ups', equipment: 'calisthenics', type: 'reps', bands: { male: [4, 7, 11, 16], female: [1, 3, 6, 11] }, muscles: { biceps: 0.9, upperBack: 0.8, forearms: 0.5 } },
-  { id: 'cal-dip', name: 'Dips', equipment: 'calisthenics', type: 'reps', bands: { male: [3, 8, 15, 25], female: [1, 3, 8, 15] }, muscles: { triceps: 0.9, chest: 0.7, shoulders: 0.4 } },
+  { id: 'cal-pullup', name: 'Pull-ups', equipment: 'calisthenics', type: 'reps', loadable: true, bands: { male: [3, 6, 10, 15], female: [1, 2, 5, 10] }, muscles: { upperBack: 0.9, biceps: 0.8, forearms: 0.6 } },
+  { id: 'cal-chinup', name: 'Chin-ups', equipment: 'calisthenics', type: 'reps', loadable: true, bands: { male: [4, 7, 11, 16], female: [1, 3, 6, 11] }, muscles: { biceps: 0.9, upperBack: 0.8, forearms: 0.5 } },
+  { id: 'cal-dip', name: 'Dips', equipment: 'calisthenics', type: 'reps', loadable: true, bands: { male: [3, 8, 15, 25], female: [1, 3, 8, 15] }, muscles: { triceps: 0.9, chest: 0.7, shoulders: 0.4 } },
   { id: 'cal-bwsquat', name: 'Bodyweight squats', equipment: 'calisthenics', type: 'reps', bands: { male: [15, 25, 40, 60], female: [12, 20, 35, 55] }, muscles: { quads: 0.8, glutes: 0.5 } },
   { id: 'cal-pistol', name: 'Pistol squats (per leg)', equipment: 'calisthenics', type: 'reps', bands: { male: [1, 3, 6, 12], female: [1, 2, 5, 10] }, muscles: { quads: 1, glutes: 0.7, core: 0.4 } },
   { id: 'cal-calfraise', name: 'Single-leg calf raises', equipment: 'calisthenics', type: 'reps', bands: { male: [5, 12, 20, 30], female: [5, 12, 20, 30] }, muscles: { calves: 1 } },
@@ -54,19 +54,37 @@ function bandRating(value, bands) {
   return r;
 }
 
-// entry: { id, weightKg?, reps } -> 0-4 rating, or null if unratable.
+// entry: { id, weightKg?, reps, addedKg? } -> 0-4 rating, or null if unratable.
+// addedKg applies to loadable rep exercises (pull-ups, chin-ups, dips):
+// positive = weight added on a belt, negative = machine/band assistance.
 export function rateExercise(entry, sex, bodyweightKg) {
   const ex = findExercise(entry.id);
   if (!ex) return null;
   const bands = ex.bands[sex === 'female' ? 'female' : 'male'];
   if (ex.type === 'reps') {
     if (!entry.reps && entry.reps !== 0) return null;
-    return bandRating(entry.reps, bands);
+    let reps = entry.reps;
+    if (ex.loadable && entry.addedKg && bodyweightKg) {
+      // Convert the loaded/assisted set to equivalent bodyweight-only reps
+      // via Epley: 1RM of (effective BW + added), solved back at plain BW.
+      const base = bodyweightKg * 0.95; // ~95% of BW is lifted in these moves
+      const total = base + entry.addedKg;
+      if (total <= 0) return 0;
+      const orm = total * (1 + Math.min(reps, 15) / 30);
+      reps = Math.max(0, 30 * (orm / base - 1));
+    }
+    return bandRating(reps, bands);
   }
   if (!entry.weightKg || !bodyweightKg) return null;
   const orm = oneRepMax(entry.weightKg, entry.reps || 1);
   return bandRating(orm / bodyweightKg, bands);
 }
+
+// Balanced starter list shown to new users (values left empty until they log).
+export const RECOMMENDED_EXERCISES = [
+  'bb-squat', 'bb-bench', 'bb-deadlift', 'bb-press', 'bb-row', 'bb-curl',
+  'cal-pushup', 'cal-pullup', 'cal-calfraise',
+];
 
 // Migrate the old fixed-field format to the exercise list, once.
 export function migrateLegacyFitness(f) {
