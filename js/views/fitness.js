@@ -8,6 +8,7 @@ import {
 import { EXERCISE_CATALOG, EQUIPMENT_LABELS, findExercise, rateExercise, migrateLegacyFitness } from '../data/exercises.js';
 import { MUSCLES, muscleContributions, muscleScores, muscleColor } from '../data/muscles.js';
 import { breakdownRadar } from '../radar.js';
+import { isImperial, kgToLb, lbToKg, cmToIn, inToCm, milesToM, mToMiles, fmtWeight } from '../units.js';
 
 const avg = (xs) => {
   const v = xs.filter((x) => x !== null && x !== undefined);
@@ -27,6 +28,7 @@ export function renderFitness(rerender) {
   const age = profile.basics?.age ?? 30;
   const sex = profile.basics?.sex ?? 'male';
   const bodyweightKg = profile.basics?.weightKg ?? profile.fitness?.bodyweightKg ?? null;
+  const imperial = isImperial();
 
   const container = el('div', {},
     el('h2', {}, 'Fitness'),
@@ -51,7 +53,7 @@ export function renderFitness(rerender) {
     }
     if (f.restingHr) push('Resting HR', `${f.restingHr}`, 'bpm', rateRestingHr(f.restingHr));
     if (f.plankSec) push('Plank', `${f.plankSec}s`, '', ratePlank(f.plankSec));
-    if (f.verticalJumpCm) push('Vertical jump', `${f.verticalJumpCm} cm`, '', rateVerticalJump(f.verticalJumpCm, age, sex));
+    if (f.verticalJumpCm) push('Vertical jump', imperial ? `${(cmToIn(f.verticalJumpCm)).toFixed(1)} in` : `${f.verticalJumpCm} cm`, '', rateVerticalJump(f.verticalJumpCm, age, sex));
     if (f.balanceSec) push('One-leg balance', `${f.balanceSec}s`, '', rateBalance(f.balanceSec));
     if (f.toeTouch) push('Flexibility', TOE_TOUCH_OPTIONS.find((o) => o.value === f.toeTouch)?.label ?? '', '', rateToeTouch(f.toeTouch));
     for (const entry of f.exercises || []) {
@@ -62,7 +64,7 @@ export function renderFitness(rerender) {
         push(ex.name, `${entry.reps}`, 'reps', r);
       } else {
         const orm = oneRepMax(entry.weightKg, entry.reps || 1);
-        push(ex.name, `${Math.round(orm)} kg 1RM`, `${(orm / bodyweightKg).toFixed(2)}× BW`, r);
+        push(ex.name, `${fmtWeight(orm)} 1RM`, `${(orm / bodyweightKg).toFixed(2)}× BW`, r);
       }
     }
     if (stats.length) container.append(card('Your results', el('div', { class: 'stat-grid' }, stats)));
@@ -129,11 +131,15 @@ export function renderFitness(rerender) {
             if (ex.type === 'weight') {
               inputs.push(
                 el('input', {
-                  type: 'number', min: 1, max: 500, placeholder: 'kg', value: entry.weightKg ?? '',
+                  type: 'number', min: 1, max: imperial ? 1100 : 500, placeholder: imperial ? 'lbs' : 'kg',
+                  value: entry.weightKg ? (imperial ? Math.round(kgToLb(entry.weightKg)) : entry.weightKg) : '',
                   style: 'max-width:80px;',
-                  oninput: (e) => (entry.weightKg = e.target.value === '' ? null : Number(e.target.value)),
+                  oninput: (e) => {
+                    const v = e.target.value === '' ? null : Number(e.target.value);
+                    entry.weightKg = v === null ? null : Math.round((imperial ? lbToKg(v) : v) * 10) / 10;
+                  },
                 }),
-                el('span', { style: 'color:var(--text-soft); font-size:0.8rem;' }, 'kg ×'));
+                el('span', { style: 'color:var(--text-soft); font-size:0.8rem;' }, imperial ? 'lbs ×' : 'kg ×'));
             }
             inputs.push(
               el('input', {
@@ -178,7 +184,7 @@ export function renderFitness(rerender) {
     card('Your exercises',
       el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
         bodyweightKg
-          ? `Search the catalog (${EXERCISE_CATALOG.length} exercises: barbell, dumbbell, Smith machine, calisthenics) and log your best recent set. Weighted lifts are rated relative to your ${bodyweightKg} kg bodyweight; dumbbell entries are per dumbbell.`
+          ? `Search the catalog (${EXERCISE_CATALOG.length} exercises: barbell, dumbbell, Smith machine, calisthenics) and log your best recent set. Weighted lifts are rated relative to your ${fmtWeight(bodyweightKg)} bodyweight; dumbbell entries are per dumbbell.`
           : 'Search the catalog and log your best recent set. Add your weight in Basics to rate weighted exercises.'),
       datalist,
       el('div', { style: 'display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:0.8rem;' }, searchInput, addBtn),
@@ -186,9 +192,11 @@ export function renderFitness(rerender) {
       saveBar(() => { update('fitness', { ...draft }); rerender(); })),
     card('Cardio',
       numberField({
-        label: 'Cooper test: distance covered in 12 minutes (meters)',
-        sub: 'Run/walk as far as you can in 12 minutes on flat ground. Warm up first; skip if you have cardiovascular risk factors.',
-        min: 500, max: 5000, value: draft.cooperMeters, onInput: (v) => (draft.cooperMeters = v),
+        label: imperial ? 'Cooper test: distance covered in 12 minutes (miles)' : 'Cooper test: distance covered in 12 minutes (meters)',
+        sub: `Run/walk as far as you can in 12 minutes on flat ground.${imperial ? ' Decimals fine: 1.25 = 1¼ miles.' : ''} Warm up first; skip if you have cardiovascular risk factors.`,
+        min: imperial ? 0.3 : 500, max: imperial ? 3.2 : 5000,
+        value: draft.cooperMeters ? (imperial ? Math.round(mToMiles(draft.cooperMeters) * 100) / 100 : draft.cooperMeters) : null,
+        onInput: (v) => (draft.cooperMeters = v === null ? null : Math.round(imperial ? milesToM(v) : v)),
       }),
       numberField({
         label: 'Recent 5k time (minutes)',
@@ -203,9 +211,11 @@ export function renderFitness(rerender) {
     card('Field tests: core, power, balance & flexibility',
       numberField({ label: 'Max plank hold (seconds)', min: 0, max: 1200, value: draft.plankSec, onInput: (v) => (draft.plankSec = v) }),
       numberField({
-        label: 'Vertical jump (cm)',
+        label: imperial ? 'Vertical jump (inches)' : 'Vertical jump (cm)',
         sub: 'Standing reach vs. jump-and-touch height difference.',
-        min: 5, max: 120, value: draft.verticalJumpCm, onInput: (v) => (draft.verticalJumpCm = v),
+        min: imperial ? 2 : 5, max: imperial ? 47 : 120,
+        value: draft.verticalJumpCm ? (imperial ? Math.round(cmToIn(draft.verticalJumpCm) * 10) / 10 : draft.verticalJumpCm) : null,
+        onInput: (v) => (draft.verticalJumpCm = v === null ? null : Math.round(imperial ? inToCm(v) : v)),
       }),
       numberField({
         label: 'One-leg stand, eyes open (seconds, max 60)',
