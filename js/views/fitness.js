@@ -1,11 +1,12 @@
 import { el, card, numberField, selectField, saveBar, statCard } from '../ui.js';
 import { getProfile, update } from '../store.js';
 import {
-  vo2maxFromCooper, vdotFrom5k, rateVo2max, rateRestingHr, ratePushups, ratePullups,
-  ratePlank, rateLift, rateVerticalJump, rateBalance, rateToeTouch, rateCalfRaises,
-  oneRepMax, TOE_TOUCH_OPTIONS, RATING_LABELS, ratingClass,
+  vo2maxFromCooper, vdotFrom5k, rateVo2max, rateRestingHr, ratePlank,
+  rateVerticalJump, rateBalance, rateToeTouch, oneRepMax,
+  TOE_TOUCH_OPTIONS, RATING_LABELS, ratingClass,
 } from '../data/benchmarks.js';
-import { BARBELL_LIFTS, MUSCLES, exerciseRatings, muscleScores, muscleColor } from '../data/muscles.js';
+import { EXERCISE_CATALOG, EQUIPMENT_LABELS, findExercise, rateExercise, migrateLegacyFitness } from '../data/exercises.js';
+import { MUSCLES, muscleContributions, muscleScores, muscleColor } from '../data/muscles.js';
 import { breakdownRadar } from '../radar.js';
 
 const avg = (xs) => {
@@ -16,29 +17,26 @@ const rs = (r) => (r === null || r === undefined ? null : r * 25);
 
 export function renderFitness(rerender) {
   const profile = getProfile();
+  const migrated = migrateLegacyFitness(profile.fitness);
   const draft = {
     cooperMeters: null, fiveKMin: null, restingHr: null,
-    pushups: null, pullups: null, plankSec: null, calfRaises: null,
-    verticalJumpCm: null, balanceSec: null, toeTouch: null,
-    squatKg: null, squatReps: null, benchKg: null, benchReps: null,
-    deadliftKg: null, deadliftReps: null, pressKg: null, pressReps: null,
-    rowKg: null, rowReps: null, curlKg: null, curlReps: null,
-    ...(profile.fitness || {}),
+    plankSec: null, verticalJumpCm: null, balanceSec: null, toeTouch: null,
+    ...(migrated || {}),
+    exercises: [...(migrated?.exercises || [])],
   };
   const age = profile.basics?.age ?? 30;
   const sex = profile.basics?.sex ?? 'male';
-  // Bodyweight comes from Basics (no duplicate entry); legacy field as fallback.
   const bodyweightKg = profile.basics?.weightKg ?? profile.fitness?.bodyweightKg ?? null;
 
   const container = el('div', {},
     el('h2', {}, 'Fitness'),
     el('p', { class: 'view-intro' },
-      'Cardio, strength, power, balance, and flexibility, rated against age- and sex-adjusted benchmarks. For barbell lifts, enter any weight × reps set — your one-rep max is estimated with the Epley formula. Every field is optional.'),
+      'Cardio, strength, power, balance, and flexibility, rated against age- and sex-adjusted benchmarks. Build your own exercise list — barbell, dumbbell, Smith machine, or calisthenics — and enter any weight × reps set; 1RM is estimated with the Epley formula.'),
     !profile.basics?.age && el('div', { class: 'callout' }, 'Set your age and sex in Basics first — fitness norms depend on both.'),
-    !bodyweightKg && el('div', { class: 'callout' }, 'Add your weight in Basics to rate barbell lifts (they are scored relative to bodyweight).'));
+    !bodyweightKg && el('div', { class: 'callout' }, 'Add your weight in Basics to rate weighted exercises (they are scored relative to bodyweight).'));
 
-  if (profile.fitness) {
-    const f = profile.fitness;
+  const f = migrated;
+  if (f) {
     const stats = [];
     const push = (label, value, sub, r) =>
       stats.push(statCard({ label, value, sub: `${sub}${sub ? ' — ' : ''}${RATING_LABELS[r]}`, tone: ratingClass(r) }));
@@ -52,48 +50,58 @@ export function renderFitness(rerender) {
       push('Est. VO2max (5k time)', vdot.toFixed(1), 'mL/kg/min', rateVo2max(vdot, age, sex));
     }
     if (f.restingHr) push('Resting HR', `${f.restingHr}`, 'bpm', rateRestingHr(f.restingHr));
-    if (f.pushups !== null && f.pushups !== undefined) push('Push-ups', `${f.pushups}`, '', ratePushups(f.pushups, age, sex));
-    if (f.pullups !== null && f.pullups !== undefined) push('Pull-ups', `${f.pullups}`, '', ratePullups(f.pullups, age, sex));
     if (f.plankSec) push('Plank', `${f.plankSec}s`, '', ratePlank(f.plankSec));
-    if (f.calfRaises) push('Calf raises (single-leg)', `${f.calfRaises}`, '', rateCalfRaises(f.calfRaises));
     if (f.verticalJumpCm) push('Vertical jump', `${f.verticalJumpCm} cm`, '', rateVerticalJump(f.verticalJumpCm, age, sex));
     if (f.balanceSec) push('One-leg balance', `${f.balanceSec}s`, '', rateBalance(f.balanceSec));
     if (f.toeTouch) push('Flexibility', TOE_TOUCH_OPTIONS.find((o) => o.value === f.toeTouch)?.label ?? '', '', rateToeTouch(f.toeTouch));
-    if (bodyweightKg) {
-      for (const [lift, label] of BARBELL_LIFTS) {
-        const w = f[`${lift}Kg`];
-        if (!w) continue;
-        const orm = oneRepMax(w, f[`${lift}Reps`] || 1);
-        push(label, `${Math.round(orm)} kg 1RM`, `${(orm / bodyweightKg).toFixed(2)}× BW`, rateLift(lift, orm, bodyweightKg, sex));
+    for (const entry of f.exercises || []) {
+      const ex = findExercise(entry.id);
+      const r = rateExercise(entry, sex, bodyweightKg);
+      if (!ex || r === null) continue;
+      if (ex.type === 'reps') {
+        push(ex.name, `${entry.reps}`, 'reps', r);
+      } else {
+        const orm = oneRepMax(entry.weightKg, entry.reps || 1);
+        push(ex.name, `${Math.round(orm)} kg 1RM`, `${(orm / bodyweightKg).toFixed(2)}× BW`, r);
       }
     }
     if (stats.length) container.append(card('Your results', el('div', { class: 'stat-grid' }, stats)));
 
-    // Breakdown radar: the sub-dimensions behind the fitness score
-    const ratings = exerciseRatings(f, age, sex, bodyweightKg);
+    // Breakdown radar by movement category
+    const catRatings = { push: [], pull: [], lower: [], core: [] };
+    for (const entry of f.exercises || []) {
+      const ex = findExercise(entry.id);
+      const r = rateExercise(entry, sex, bodyweightKg);
+      if (!ex || r === null) continue;
+      const primary = Object.entries(ex.muscles).sort((a, b) => b[1] - a[1])[0][0];
+      if (['chest', 'shoulders', 'triceps'].includes(primary)) catRatings.push.push(r);
+      else if (['upperBack', 'biceps', 'forearms'].includes(primary)) catRatings.pull.push(r);
+      else if (['quads', 'glutes', 'hamstrings', 'calves', 'lowerBack'].includes(primary)) catRatings.lower.push(r);
+      else catRatings.core.push(r);
+    }
+    if (f.plankSec) catRatings.core.push(ratePlank(f.plankSec));
     const cardioParts = [
       f.cooperMeters ? rateVo2max(vo2maxFromCooper(f.cooperMeters), age, sex) : null,
       f.fiveKMin ? rateVo2max(vdotFrom5k(f.fiveKMin), age, sex) : null,
       f.restingHr ? rateRestingHr(f.restingHr) : null,
     ];
-    const sub = [
+    const radar = breakdownRadar([
       { label: 'Cardio', value: avg(cardioParts.map(rs)) },
-      { label: 'Upper push', value: avg([ratings.bench, ratings.press, ratings.pushups].map(rs)) },
-      { label: 'Upper pull', value: avg([ratings.row, ratings.pullups, ratings.curl].map(rs)) },
-      { label: 'Lower body', value: avg([ratings.squat, ratings.deadlift, ratings.calfRaises].map(rs)) },
-      { label: 'Core', value: rs(ratings.plank) },
-      { label: 'Power', value: rs(ratings.verticalJump) },
+      { label: 'Upper push', value: avg(catRatings.push.map(rs)) },
+      { label: 'Upper pull', value: avg(catRatings.pull.map(rs)) },
+      { label: 'Lower body', value: avg(catRatings.lower.map(rs)) },
+      { label: 'Core', value: avg(catRatings.core.map(rs)) },
+      { label: 'Power', value: f.verticalJumpCm ? rs(rateVerticalJump(f.verticalJumpCm, age, sex)) : null },
       { label: 'Balance', value: f.balanceSec ? rs(rateBalance(f.balanceSec)) : null },
       { label: 'Flexibility', value: f.toeTouch ? rs(rateToeTouch(f.toeTouch)) : null },
-    ];
-    const radar = breakdownRadar(sub);
+    ]);
     if (radar) {
       container.append(card('Fitness breakdown', radar,
         el('p', { class: 'hint' }, 'The sub-dimensions behind your fitness score. Complete more tests to fill in the picture.')));
     }
 
     // Muscle map
-    const mScores = muscleScores(ratings);
+    const mScores = muscleScores(muscleContributions(f, age, sex, bodyweightKg));
     if (Object.values(mScores).some((v) => v !== null)) {
       container.append(card('Muscle map',
         el('div', { class: 'muscle-map-wrap' }, bodySvg('front', mScores), bodySvg('back', mScores)),
@@ -104,16 +112,78 @@ export function renderFitness(rerender) {
           el('span', { style: 'color:#16a34a;' }, 'Strong'),
           el('span', { style: 'color:#a8aeb8;' }, 'No data')),
         el('p', { class: 'hint' },
-          'Each muscle group is colored by the benchmark ratings of the exercises that train it, weighted by involvement. Log more exercises (curls for biceps, calf raises for calves, rows for upper back…) to light up the whole body.')));
+          'Each muscle group is colored by the benchmark ratings of the exercises that train it, weighted by involvement. Add curls for biceps, calf raises for calves, rows for upper back… to light up the whole body.')));
     }
   }
 
-  const liftRow = (lift, label) =>
-    el('div', { style: 'display:flex; gap:0.8rem; flex-wrap:wrap; align-items:flex-end;' },
-      numberField({ label: `${label} — weight (kg)`, min: 0, max: 500, value: draft[`${lift}Kg`], onInput: (v) => (draft[`${lift}Kg`] = v) }),
-      numberField({ label: 'reps', sub: '1 = it was a max single', min: 1, max: 30, value: draft[`${lift}Reps`], onInput: (v) => (draft[`${lift}Reps`] = v) }));
+  // ------- Exercise list manager (typeahead) -------
+  const exListEl = el('div', { class: 'row-list' });
+
+  function renderExerciseRows() {
+    exListEl.replaceChildren(...(
+      draft.exercises.length
+        ? draft.exercises.map((entry, i) => {
+            const ex = findExercise(entry.id);
+            if (!ex) return el('div');
+            const inputs = [];
+            if (ex.type === 'weight') {
+              inputs.push(
+                el('input', {
+                  type: 'number', min: 1, max: 500, placeholder: 'kg', value: entry.weightKg ?? '',
+                  style: 'max-width:80px;',
+                  oninput: (e) => (entry.weightKg = e.target.value === '' ? null : Number(e.target.value)),
+                }),
+                el('span', { style: 'color:var(--text-soft); font-size:0.8rem;' }, 'kg ×'));
+            }
+            inputs.push(
+              el('input', {
+                type: 'number', min: ex.type === 'weight' ? 1 : 0, max: 200, placeholder: 'reps', value: entry.reps ?? '',
+                style: 'max-width:70px;',
+                oninput: (e) => (entry.reps = e.target.value === '' ? null : Number(e.target.value)),
+              }),
+              el('span', { style: 'color:var(--text-soft); font-size:0.8rem;' }, 'reps'));
+            return el('div', { class: 'row' },
+              el('div', { style: 'min-width:180px;' },
+                el('strong', {}, ex.name),
+                el('span', { class: 'badge', style: 'margin-left:0.4rem;' }, EQUIPMENT_LABELS[ex.equipment])),
+              ...inputs,
+              el('button', { class: 'row-remove', onclick: () => { draft.exercises.splice(i, 1); renderExerciseRows(); } }, 'Remove'));
+          })
+        : [el('p', { class: 'empty-note' }, 'No exercises yet — search above and add the ones you actually do.')]));
+  }
+
+  const datalist = el('datalist', { id: 'exercise-options' },
+    EXERCISE_CATALOG.map((ex) => el('option', { value: `${ex.name} (${EQUIPMENT_LABELS[ex.equipment]})` })));
+  const searchInput = el('input', {
+    type: 'text', list: 'exercise-options', placeholder: 'Type to search… e.g. curl, squat, dips',
+    style: 'max-width:320px;',
+  });
+  const addBtn = el('button', {
+    class: 'btn',
+    onclick: () => {
+      const val = searchInput.value.trim().toLowerCase();
+      const ex = EXERCISE_CATALOG.find((e) =>
+        `${e.name} (${EQUIPMENT_LABELS[e.equipment]})`.toLowerCase() === val || e.name.toLowerCase() === val);
+      if (!ex) { alert('Pick an exercise from the suggestions.'); return; }
+      if (draft.exercises.some((en) => en.id === ex.id)) { searchInput.value = ''; return; }
+      draft.exercises.push({ id: ex.id, weightKg: null, reps: null });
+      searchInput.value = '';
+      renderExerciseRows();
+    },
+  }, 'Add');
+
+  renderExerciseRows();
 
   container.append(
+    card('Your exercises',
+      el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
+        bodyweightKg
+          ? `Search the catalog (${EXERCISE_CATALOG.length} exercises: barbell, dumbbell, Smith machine, calisthenics) and log your best recent set. Weighted lifts are rated relative to your ${bodyweightKg} kg bodyweight; dumbbell entries are per dumbbell.`
+          : 'Search the catalog and log your best recent set. Add your weight in Basics to rate weighted exercises.'),
+      datalist,
+      el('div', { style: 'display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:0.8rem;' }, searchInput, addBtn),
+      exListEl,
+      saveBar(() => { update('fitness', { ...draft }); rerender(); })),
     card('Cardio',
       numberField({
         label: 'Cooper test: distance covered in 12 minutes (meters)',
@@ -130,16 +200,8 @@ export function renderFitness(rerender) {
         sub: 'Measure seated, after 5 minutes of rest — ideally in the morning.',
         min: 30, max: 150, value: draft.restingHr, onInput: (v) => (draft.restingHr = v),
       })),
-    card('Bodyweight strength & endurance',
-      numberField({ label: 'Max push-ups in one set', min: 0, max: 200, value: draft.pushups, onInput: (v) => (draft.pushups = v) }),
-      numberField({ label: 'Max strict pull-ups in one set', min: 0, max: 60, value: draft.pullups, onInput: (v) => (draft.pullups = v) }),
+    card('Field tests: core, power, balance & flexibility',
       numberField({ label: 'Max plank hold (seconds)', min: 0, max: 1200, value: draft.plankSec, onInput: (v) => (draft.plankSec = v) }),
-      numberField({
-        label: 'Single-leg calf raises to fatigue (reps)',
-        sub: 'Stand on one foot, rise onto the ball of your foot, full range, until you can\'t.',
-        min: 0, max: 100, value: draft.calfRaises, onInput: (v) => (draft.calfRaises = v),
-      })),
-    card('Power, balance & flexibility',
       numberField({
         label: 'Vertical jump (cm)',
         sub: 'Standing reach vs. jump-and-touch height difference.',
@@ -155,13 +217,7 @@ export function renderFitness(rerender) {
         value: draft.toeTouch ?? '',
         options: [{ value: '', label: '— not measured —' }, ...TOE_TOUCH_OPTIONS],
         onChange: (v) => (draft.toeTouch = v || null),
-      })),
-    card('Barbell lifts (any weight × reps set)',
-      el('p', { class: 'hint', style: 'margin-bottom:0.8rem;' },
-        bodyweightKg
-          ? `Rated relative to your bodyweight (${bodyweightKg} kg, from Basics). Enter your best recent set — 1RM is estimated with the Epley formula.`
-          : 'Add your weight in Basics to enable lift ratings.'),
-      ...BARBELL_LIFTS.map(([lift, label]) => liftRow(lift, label)),
+      }),
       saveBar(() => { update('fitness', { ...draft }); rerender(); })));
 
   return container;
@@ -186,7 +242,6 @@ function bodySvg(side, scores) {
     return node;
   };
 
-  // silhouette basics (both sides)
   shape('circle', { cx: 50, cy: 10, r: 8, fill: '#e8ebef' });
   shape('rect', { x: 46, y: 17, width: 8, height: 6, fill: '#e8ebef' });
 

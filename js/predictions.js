@@ -2,7 +2,8 @@
 // stated, built from published effect sizes and standard progression models —
 // not point predictions. Where evidence is weak we say "heuristic".
 
-import { vo2maxFromCooper, vdotFrom5k, rateVo2max, ratePushups, ratePullups, rateLift, oneRepMax } from './data/benchmarks.js';
+import { vo2maxFromCooper, vdotFrom5k, rateVo2max } from './data/benchmarks.js';
+import { rateExercise, migrateLegacyFitness } from './data/exercises.js';
 import { normalCdf } from './data/cognitive.js';
 
 const fmt = (n) => Math.round(n).toLocaleString();
@@ -67,19 +68,11 @@ export function earningsPotential(profile, scores) {
 // Novice lifters on structured progressive overload typically gain 40-100%
 // on main lifts in year one; intermediates 10-25%.
 export function strengthPotential(profile) {
-  const f = profile.fitness;
+  const f = migrateLegacyFitness(profile.fitness);
   if (!f) return null;
-  const age = profile.basics?.age ?? 30, sex = profile.basics?.sex ?? 'male';
-
-  const ratings = [];
+  const sex = profile.basics?.sex ?? 'male';
   const bw = profile.basics?.weightKg ?? f.bodyweightKg ?? null;
-  if (f.pushups !== null && f.pushups !== undefined) ratings.push(ratePushups(f.pushups, age, sex));
-  if (f.pullups !== null && f.pullups !== undefined) ratings.push(ratePullups(f.pullups, age, sex));
-  if (bw) {
-    for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row', 'curl']) {
-      if (f[`${lift}Kg`]) ratings.push(rateLift(lift, oneRepMax(f[`${lift}Kg`], f[`${lift}Reps`] || 1), bw, sex));
-    }
-  }
+  const ratings = (f.exercises || []).map((e) => rateExercise(e, sex, bw)).filter((r) => r !== null);
   if (!ratings.length) return null;
   const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
 

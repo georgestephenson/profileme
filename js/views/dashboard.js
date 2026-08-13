@@ -5,6 +5,7 @@ import { TRAITS } from '../data/ipip.js';
 import { matchFigures, BASIS_LABELS } from '../data/figures.js';
 import { radarChart } from '../radar.js';
 import { drawShareCard } from '../sharecard.js';
+import { buildAiPrompt } from '../aiprompt.js';
 
 export function renderDashboard() {
   const profile = getProfile();
@@ -152,6 +153,38 @@ export function renderDashboard() {
       el('div', { style: 'text-align:center; margin-top:0.8rem;' }, downloadBtn),
       el('p', { class: 'hint', style: 'text-align:center;' },
         'A square summary image for social media. It contains only what you see above — share it wherever you like. Politics is never included.')));
+  }
+
+  // Prompt for AI agents
+  if (completed.length >= 2 || hasPersonality) {
+    const promptText = buildAiPrompt(profile, scores);
+    const ta = el('textarea', {
+      readonly: true,
+      style: 'width:100%; height:220px; font-family:ui-monospace, monospace; font-size:0.72rem;'
+        + 'border:1px solid var(--border); border-radius:8px; padding:0.7rem; background:var(--bg); color:var(--text); resize:vertical;',
+    });
+    ta.value = promptText;
+    const copyNote = el('span', { class: 'progress-note', style: 'margin-left:0.8rem; display:none;' }, 'Copied ✓');
+    const copyBtn = el('button', {
+      class: 'btn',
+      onclick: async () => {
+        try {
+          await navigator.clipboard.writeText(promptText);
+        } catch {
+          ta.select();
+          document.execCommand('copy');
+        }
+        copyNote.style.display = 'inline';
+        setTimeout(() => { copyNote.style.display = 'none'; }, 2000);
+      },
+    }, 'Copy prompt');
+    container.append(card('Prompt for AI agents',
+      el('p', { class: 'hint', style: 'margin-bottom:0.6rem;' },
+        `Your entire profile — every result, score, grade, and the app's own analysis (${Math.round(promptText.length / 1000)}k characters) — packaged as one prompt. Paste it into any capable AI (Claude, ChatGPT, Gemini…) for a deep personalized read: a summary of who you are, strengths and weaknesses, predictions about how you come across and where you're heading, and prioritized advice.`),
+      ta,
+      el('div', { style: 'margin-top:0.7rem;' }, copyBtn, copyNote),
+      el('p', { class: 'hint' },
+        'Includes everything you\'ve completed — politics too, since this prompt is for your own private use. Remember that whatever you paste into an AI service is governed by that service\'s privacy policy.')));
   }
 
   return container;

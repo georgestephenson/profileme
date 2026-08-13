@@ -5,12 +5,14 @@
 import { scoreIpip, scoreHH } from './data/ipip.js';
 import { scoreGrooming } from './data/grooming.js';
 import { scoreWellbeing } from './views/wellbeing.js';
+import { scoreResilience } from './data/resilience.js';
 import {
-  vo2maxFromCooper, vdotFrom5k, rateVo2max, rateRestingHr, ratePushups, ratePullups,
-  ratePlank, rateLift, rateVerticalJump, rateBalance, rateToeTouch, rateCalfRaises, oneRepMax,
+  vo2maxFromCooper, vdotFrom5k, rateVo2max, rateRestingHr,
+  ratePlank, rateVerticalJump, rateBalance, rateToeTouch,
   financeMetrics, rateSavingsRate, rateEmergencyFund, rateDebtToIncome,
   expectedNetWorth, rateDigitSpan, rateReactionTime, cefrPoints,
 } from './data/benchmarks.js';
+import { rateExercise, migrateLegacyFitness } from './data/exercises.js';
 
 const ratingToScore = (r) => (r === null || r === undefined ? null : r * 25);
 const avg = (xs) => {
@@ -46,22 +48,18 @@ export function computeScores(profile) {
   if (profile.fitness) {
     const f = profile.fitness;
     const parts = [];
+    const fx = migrateLegacyFitness(f);
     const bw = basics?.weightKg ?? f.bodyweightKg ?? null;
-    if (f.cooperMeters) parts.push(ratingToScore(rateVo2max(vo2maxFromCooper(f.cooperMeters), age, sex)));
-    if (f.fiveKMin) parts.push(ratingToScore(rateVo2max(vdotFrom5k(f.fiveKMin), age, sex)));
-    if (f.restingHr) parts.push(ratingToScore(rateRestingHr(f.restingHr)));
-    if (f.pushups !== null && f.pushups !== undefined) parts.push(ratingToScore(ratePushups(f.pushups, age, sex)));
-    if (f.pullups !== null && f.pullups !== undefined) parts.push(ratingToScore(ratePullups(f.pullups, age, sex)));
-    if (f.plankSec) parts.push(ratingToScore(ratePlank(f.plankSec)));
-    if (f.calfRaises) parts.push(ratingToScore(rateCalfRaises(f.calfRaises)));
-    if (f.verticalJumpCm) parts.push(ratingToScore(rateVerticalJump(f.verticalJumpCm, age, sex)));
-    if (f.balanceSec) parts.push(ratingToScore(rateBalance(f.balanceSec)));
-    if (f.toeTouch) parts.push(ratingToScore(rateToeTouch(f.toeTouch)));
-    if (bw) {
-      for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row', 'curl']) {
-        const w = f[`${lift}Kg`];
-        if (w) parts.push(ratingToScore(rateLift(lift, oneRepMax(w, f[`${lift}Reps`] || 1), bw, sex)));
-      }
+    if (fx.cooperMeters) parts.push(ratingToScore(rateVo2max(vo2maxFromCooper(fx.cooperMeters), age, sex)));
+    if (fx.fiveKMin) parts.push(ratingToScore(rateVo2max(vdotFrom5k(fx.fiveKMin), age, sex)));
+    if (fx.restingHr) parts.push(ratingToScore(rateRestingHr(fx.restingHr)));
+    if (fx.plankSec) parts.push(ratingToScore(ratePlank(fx.plankSec)));
+    if (fx.verticalJumpCm) parts.push(ratingToScore(rateVerticalJump(fx.verticalJumpCm, age, sex)));
+    if (fx.balanceSec) parts.push(ratingToScore(rateBalance(fx.balanceSec)));
+    if (fx.toeTouch) parts.push(ratingToScore(rateToeTouch(fx.toeTouch)));
+    for (const entry of fx.exercises || []) {
+      const r = rateExercise(entry, sex, bw);
+      if (r !== null) parts.push(ratingToScore(r));
     }
     scores.fitness = avg(parts);
   } else scores.fitness = null;
@@ -146,6 +144,9 @@ export function computeScores(profile) {
   // Well-being
   scores.wellbeing = scoreWellbeing(profile.wellbeing)?.score ?? null;
 
+  // Resilience
+  scores.resilience = scoreResilience(profile.resilience);
+
   // Composite: equal-weighted mean of every available component. One number
   // for the gamified overview — the per-domain picture is the real content.
   const componentKeys = [...Object.keys(DOMAIN_LABELS), 'personalityAssets'];
@@ -166,6 +167,7 @@ export const DOMAIN_LABELS = {
   relationships: 'Relationships',
   grooming: 'Grooming',
   wellbeing: 'Well-being',
+  resilience: 'Resilience',
 };
 
 export const COMPONENT_LABELS = {
@@ -197,11 +199,13 @@ const RULES = [
   {
     domain: 'Fitness',
     apply(p) {
-      const f = p.fitness;
+      const f = migrateLegacyFitness(p.fitness);
       if (!f) return null;
-      const age = p.basics?.age ?? 30, sex = p.basics?.sex ?? 'male';
-      const weak = (f.pushups !== undefined && f.pushups !== null && ratePushups(f.pushups, age, sex) <= 1) ||
-                   (f.plankSec && ratePlank(f.plankSec) <= 1);
+      const sex = p.basics?.sex ?? 'male';
+      const bw = p.basics?.weightKg ?? f.bodyweightKg ?? null;
+      const ratings = (f.exercises || []).map((e) => rateExercise(e, sex, bw)).filter((r) => r !== null);
+      if (f.plankSec) ratings.push(ratePlank(f.plankSec));
+      const weak = ratings.length && Math.min(...ratings) <= 1;
       if (!weak) return null;
       return {
         text: 'Add 2-3 short resistance sessions per week — push-ups, rows, squats, planks — progressing reps or load gradually.',
@@ -327,6 +331,31 @@ const RULES = [
       return {
         text: 'Add a daily SPF 30+ moisturizer to your morning routine.',
         why: 'Daily sunscreen measurably slowed skin aging in a randomized controlled trial (Hughes et al., 2013) and cuts skin-cancer risk — the best-evidenced appearance intervention there is.',
+      };
+    },
+  },
+  {
+    domain: 'Well-being',
+    apply(p) {
+      if (p.wellbeing?.smoking !== 'current') return null;
+      return {
+        text: 'Quitting smoking is the single highest-leverage change available to you — worth more life-years than every other habit here combined. Combination support (medication + counseling) roughly doubles quit rates versus willpower alone.',
+        why: 'Lifelong smoking costs ~10 years of life expectancy; quitting by ~40 recovers nearly all of it (Doll et al., 2004; Jha et al., 2013).',
+      };
+    },
+  },
+  {
+    domain: 'Resilience',
+    apply(p) {
+      const r = p.resilience;
+      if (!r?.stressAnswers) return null;
+      const items = ['st1', 'st2', 'st3', 'st4'];
+      if (items.some((id) => r.stressAnswers[id] === undefined)) return null;
+      const stress = items.reduce((a, id, i) => a + (i === 0 || i === 3 ? r.stressAnswers[id] : 4 - r.stressAnswers[id]), 0);
+      if (stress < 10) return null;
+      return {
+        text: 'Your perceived-stress score is high. The best-evidenced tools: aerobic exercise (works within weeks), a daily wind-down routine, reducing stressor exposure where possible, and CBT-based stress management — a professional is worth talking to if it persists.',
+        why: 'Chronic perceived stress predicts worse cardiovascular and mental-health outcomes; exercise and CBT-based programs show reliable reductions in meta-analyses.',
       };
     },
   },

@@ -35,6 +35,17 @@ export async function fetchGdpPerCapita(iso3) {
   return { gdpPcPpp: row.value, year: row.date, country: row.country?.value };
 }
 
+// Life expectancy at birth by sex (World Bank), most recent available year.
+export async function fetchLifeExpectancy(iso3, sex) {
+  const indicator = sex === 'female' ? 'SP.DYN.LE00.FE.IN' : 'SP.DYN.LE00.MA.IN';
+  const res = await fetch(`https://api.worldbank.org/v2/country/${iso3}/indicator/${indicator}?format=json&per_page=10`);
+  if (!res.ok) throw new Error('World Bank request failed');
+  const data = await res.json();
+  const row = (data[1] || []).find((r) => r.value !== null);
+  if (!row) throw new Error('No life expectancy data');
+  return { years: row.value, year: row.date, country: row.country?.value };
+}
+
 export async function fetchUsdRate(currencyCode) {
   if (currencyCode === 'USD') return 1;
   const res = await fetch(`https://api.frankfurter.app/latest?from=${currencyCode}&to=USD`);

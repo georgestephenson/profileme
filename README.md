@@ -31,14 +31,17 @@ dashboard with analysis and science-informed recommendations.
 | Personality | IPIP 50-item Big Five factor markers + optional Honesty-Humility (HEXACO) supplement | Public-domain (Goldberg, ipip.ori.org); HEXACO sixth factor (Ashton & Lee) |
 | Body | BMI, waist-to-height ratio | Standard population screens; WHtR < 0.5 guideline |
 | Cardio fitness | Cooper 12-minute run or 5k time → VO2max, or resting heart rate | Cooper (1968); Daniels & Gilbert VDOT; ACSM-style age/sex ratings |
-| Strength & function | Push-ups, pull-ups, plank, calf raises, vertical jump, one-leg balance, toe-touch, six barbell lifts entered as any weight × reps (Epley 1RM) | Strength standards; Epley formula; Araujo et al. (2022) balance-mortality finding |
+| Strength & function | Build-your-own list from a 29-exercise catalog (barbell, dumbbell, Smith machine, calisthenics) entered as any weight × reps (Epley 1RM), plus plank, vertical jump, one-leg balance, toe-touch | Strength standards per equipment type; Epley formula; Araujo et al. (2022) |
 | Finances | Savings rate, emergency fund, debt-to-income, net worth vs. age; user currency (Intl-formatted); income vs. your country via live World Bank GDP-per-capita data | Standard personal-finance metrics; World Bank API + ECB reference rates |
 | Cognition | 36-item ability battery (verbal knowledge, series, analogies, matrix reasoning) + digit span + reaction time | ICAR-format items (Condon & Revelle, 2014); reported as an estimated range with provisional norms |
 | Career & education | Structured self-report (education, experience, satisfaction, learning, network) | Heuristic, labeled as such |
 | Languages | CEFR self-assessment per language | Council of Europe CEFR framework |
 | Relationships | UCLA-3 loneliness scale, social + family contact, relationship satisfaction | Hughes et al. (2004); relationship-quality well-being findings |
 | Grooming | 8 upkeep-habit items (oral care, SPF, presentation) | Oral-systemic health links; Hughes et al. (2013) sunscreen RCT; person-perception findings |
-| Well-being | Satisfaction With Life Scale + sleep | Diener et al. (1985), free-to-use validated instrument; AASM/SRS sleep consensus |
+| Well-being & health | Satisfaction With Life Scale, sleep hours + 4-item sleep-quality index, chronotype (MEQ-style), smoking, alcohol | Diener et al. (1985); AASM/SRS consensus; Horne-Ostberg-style items |
+| Mind & resilience | Perceived stress (PSS-4-style), General Self-Efficacy Scale, grit (Grit-S-style original items) | Cohen; Schwarzer & Jerusalem (1995, free to use); Duckworth's construct with original items |
+| Values | 10 basic values, Schwartz circumplex model (original items) | Schwartz values framework; profile only, ungraded |
+| Life expectancy | National baseline (World Bank, by sex) ± transparent evidence-anchored factors (smoking, fitness, BMI, sleep, connection, alcohol, education) | Doll et al. (2004); Mandsager et al. (2018); Holt-Lunstad et al. (2010); shown factor-by-factor with heavy caveats |
 | Background & mobility | MacArthur ladder (childhood vs. now) + intergenerational education | Adler et al. (2000) subjective social status research |
 | Politics | 16 original items on two axes (economic left-right, social libertarian-authoritarian) | Standard two-dimensional structure from political psychology; a profile, never graded or included in the composite |
 
@@ -80,6 +83,12 @@ log. The dashboard offers a **shareable summary image** (canvas-rendered PNG,
 branded geosona.com/profileme) containing only the scores shown on screen —
 politics is never included. Profiles can be **exported/imported as JSON**, and
 on mobile the navigation collapses behind a menu button.
+
+The dashboard also generates a **"Prompt for AI agents"**: the entire profile —
+every result, benchmark rating, grade, and the app's own analysis — serialized
+into one prompt with instructions asking an LLM for a summary of the person,
+ranked strengths and weaknesses, behavioral predictions, a 5-10 year outlook,
+and prioritized advice. One click to copy, paste into any capable AI.
 
 ## Running it
 

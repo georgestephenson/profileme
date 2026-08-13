@@ -12,7 +12,9 @@ const defaults = () => ({
   relationships: null, // { ucla: [1..3 x3], closeFriends, weeklyInteractions }
   goals: null,         // { selected: [goalKey] }
   grooming: null,      // { answers: {itemId: 1..5}, completedAt }
-  wellbeing: null,     // { swls: [1..7 x5], sleepHours, completedAt }
+  wellbeing: null,     // { swls, sleepHours, sleepQuality, chrono, smoking, drinksPerWeek }
+  resilience: null,    // { stressAnswers, gseAnswers, gritAnswers }
+  values: null,        // { answers: {valueKey: 1..5} } — profile only, ungraded
   background: null,    // { childhoodLadder, currentLadder, parentEducation, firstGenUniversity }
   politics: null,      // { answers: {itemId: -2..2}, completedAt } — profile only, never scored
   settings: null,      // { currency, country }

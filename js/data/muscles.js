@@ -1,11 +1,9 @@
-// Muscle-group model: maps each exercise's benchmark rating (0-4) onto the
-// muscle groups it trains, weighted by involvement, to produce a per-muscle
-// 0-100 score for the body diagram.
+// Muscle-group model: maps logged exercises' benchmark ratings (0-4) onto the
+// muscle groups they train, weighted by involvement, producing per-muscle
+// 0-100 scores for the body diagram.
 
-import {
-  ratePushups, ratePullups, ratePlank, rateLift, rateVerticalJump, rateCalfRaises,
-} from './benchmarks.js';
-import { oneRepMax } from './benchmarks.js';
+import { ratePlank, rateVerticalJump } from './benchmarks.js';
+import { findExercise, rateExercise } from './exercises.js';
 
 export const MUSCLES = {
   shoulders: 'Shoulders',
@@ -22,60 +20,35 @@ export const MUSCLES = {
   calves: 'Calves',
 };
 
-// exercise -> { muscle: weight }
-const EXERCISE_MUSCLES = {
-  bench: { chest: 1, triceps: 0.6, shoulders: 0.4 },
-  press: { shoulders: 1, triceps: 0.6 },
-  row: { upperBack: 1, biceps: 0.5, forearms: 0.4 },
-  curl: { biceps: 1, forearms: 0.4 },
-  squat: { quads: 1, glutes: 0.8, lowerBack: 0.3, core: 0.3 },
-  deadlift: { hamstrings: 0.9, glutes: 0.8, lowerBack: 1, forearms: 0.5, upperBack: 0.4 },
-  pullups: { upperBack: 0.9, biceps: 0.8, forearms: 0.6 },
-  pushups: { chest: 0.7, triceps: 0.5, shoulders: 0.4, core: 0.3 },
+// Contributions from the non-catalog field tests.
+const FIELD_TESTS = {
   plank: { core: 1 },
   verticalJump: { quads: 0.6, glutes: 0.5, calves: 0.6 },
-  calfRaises: { calves: 1 },
 };
 
-export const BARBELL_LIFTS = [
-  ['squat', 'Squat'],
-  ['bench', 'Bench press'],
-  ['deadlift', 'Deadlift'],
-  ['press', 'Overhead press'],
-  ['row', 'Barbell row'],
-  ['curl', 'Barbell curl'],
-];
-
-// Collect each exercise's 0-4 rating from the fitness data (null if absent).
-export function exerciseRatings(fitness, age, sex, bodyweightKg) {
+// -> [{ muscles: {m: weight}, rating: 0-4 }]
+export function muscleContributions(fitness, age, sex, bodyweightKg) {
   const f = fitness || {};
-  const r = {};
-  if (f.pushups !== null && f.pushups !== undefined) r.pushups = ratePushups(f.pushups, age, sex);
-  if (f.pullups !== null && f.pullups !== undefined) r.pullups = ratePullups(f.pullups, age, sex);
-  if (f.plankSec) r.plank = ratePlank(f.plankSec);
-  if (f.verticalJumpCm) r.verticalJump = rateVerticalJump(f.verticalJumpCm, age, sex);
-  if (f.calfRaises) r.calfRaises = rateCalfRaises(f.calfRaises);
-  if (bodyweightKg) {
-    for (const [lift] of BARBELL_LIFTS) {
-      const w = f[`${lift}Kg`];
-      if (!w) continue;
-      const orm = oneRepMax(w, f[`${lift}Reps`] || 1);
-      r[lift] = rateLift(lift, orm, bodyweightKg, sex);
-    }
+  const out = [];
+  for (const entry of f.exercises || []) {
+    const ex = findExercise(entry.id);
+    const rating = rateExercise(entry, sex, bodyweightKg);
+    if (ex && rating !== null) out.push({ muscles: ex.muscles, rating });
   }
-  return r;
+  if (f.plankSec) out.push({ muscles: FIELD_TESTS.plank, rating: ratePlank(f.plankSec) });
+  if (f.verticalJumpCm) out.push({ muscles: FIELD_TESTS.verticalJump, rating: rateVerticalJump(f.verticalJumpCm, age, sex) });
+  return out;
 }
 
-// Per-muscle 0-100 score (weighted mean of contributing exercise ratings),
-// or null when no relevant exercise has data.
-export function muscleScores(ratings) {
+// Per-muscle 0-100 score (weighted mean of contributing ratings), null = no data.
+export function muscleScores(contributions) {
   const out = {};
   for (const m of Object.keys(MUSCLES)) {
     let num = 0, den = 0;
-    for (const [ex, muscles] of Object.entries(EXERCISE_MUSCLES)) {
-      const w = muscles[m];
-      if (!w || ratings[ex] === undefined) continue;
-      num += ratings[ex] * 25 * w;
+    for (const c of contributions) {
+      const w = c.muscles[m];
+      if (!w) continue;
+      num += c.rating * 25 * w;
       den += w;
     }
     out[m] = den > 0 ? Math.round(num / den) : null;

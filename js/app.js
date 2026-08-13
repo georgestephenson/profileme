@@ -3,6 +3,8 @@ import { getProfile, resetAll, exportJson, importJson } from './store.js';
 import { renderPolitics } from './views/politics.js';
 import { renderBackground } from './views/background.js';
 import { renderWellbeing } from './views/wellbeing.js';
+import { renderResilience } from './views/resilience.js';
+import { renderValues } from './views/values.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderBasics } from './views/basics.js';
 import { renderPersonality } from './views/personality.js';
@@ -28,6 +30,8 @@ const ROUTES = [
   { path: '#/relationships', label: 'Relationships', render: renderRelationships, section: 'Profile', done: (p) => !!p.relationships },
   { path: '#/grooming', label: 'Grooming', render: renderGrooming, section: 'Profile', done: (p) => !!p.grooming },
   { path: '#/wellbeing', label: 'Well-being', render: renderWellbeing, section: 'Profile', done: (p) => !!p.wellbeing },
+  { path: '#/resilience', label: 'Resilience', render: renderResilience, section: 'Profile', done: (p) => !!p.resilience },
+  { path: '#/values', label: 'Values', render: renderValues, section: 'Profile', done: (p) => !!p.values },
   { path: '#/background', label: 'Background', render: renderBackground, section: 'Profile', done: (p) => !!p.background },
   { path: '#/politics', label: 'Politics', render: renderPolitics, section: 'Profile', done: (p) => !!p.politics },
 ];
