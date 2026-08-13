@@ -1,6 +1,7 @@
 import { el, card, numberField, selectField, saveBar } from '../ui.js';
 import { getProfile, update } from '../store.js';
 import { UCLA3_ITEMS, UCLA3_OPTIONS } from '../data/benchmarks.js';
+import { breakdownRadar } from '../radar.js';
 
 export function renderRelationships(rerender) {
   const saved = getProfile().relationships;
@@ -27,6 +28,18 @@ export function renderRelationships(rerender) {
         el('span', { class: `badge ${lonely ? 'bad' : 'good'}` }, lonely ? 'Lonely range (6+)' : 'Not lonely range')),
       el('p', { class: 'hint' },
         'Scores of 6 or more are conventionally classed as "lonely" in research using this scale. This is a screen, not a diagnosis.')));
+
+    const clamp = (x) => Math.max(0, Math.min(100, x));
+    const radar = breakdownRadar([
+      { label: 'Not lonely', value: clamp(((9 - total) / 6) * 100) },
+      { label: 'Close friends', value: saved.closeFriends !== null && saved.closeFriends !== undefined ? clamp(saved.closeFriends * 22) : null },
+      { label: 'Social contact', value: clamp(((saved.weeklyInteractions ?? 0) + (saved.familyContactsPerWeek ?? 0) * 0.5) * 15) },
+      { label: 'Partnership', value: saved.partnerStatus === 'partnered' && saved.partnerSatisfaction ? clamp(saved.partnerSatisfaction * 10) : null },
+    ]);
+    if (radar) {
+      container.append(card('Relationships breakdown', radar,
+        el('p', { class: 'hint' }, 'The sub-dimensions behind your relationships score.')));
+    }
   }
 
   const uclaItems = UCLA3_ITEMS.map((text, i) =>

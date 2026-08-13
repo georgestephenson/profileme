@@ -1,5 +1,8 @@
 import { el } from './ui.js';
-import { getProfile, resetAll } from './store.js';
+import { getProfile, resetAll, exportJson, importJson } from './store.js';
+import { renderPolitics } from './views/politics.js';
+import { renderBackground } from './views/background.js';
+import { renderWellbeing } from './views/wellbeing.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderBasics } from './views/basics.js';
 import { renderPersonality } from './views/personality.js';
@@ -24,6 +27,9 @@ const ROUTES = [
   { path: '#/languages', label: 'Languages', render: renderLanguages, section: 'Profile', done: (p) => !!p.languages?.list?.length },
   { path: '#/relationships', label: 'Relationships', render: renderRelationships, section: 'Profile', done: (p) => !!p.relationships },
   { path: '#/grooming', label: 'Grooming', render: renderGrooming, section: 'Profile', done: (p) => !!p.grooming },
+  { path: '#/wellbeing', label: 'Well-being', render: renderWellbeing, section: 'Profile', done: (p) => !!p.wellbeing },
+  { path: '#/background', label: 'Background', render: renderBackground, section: 'Profile', done: (p) => !!p.background },
+  { path: '#/politics', label: 'Politics', render: renderPolitics, section: 'Profile', done: (p) => !!p.politics },
 ];
 
 const navEl = document.getElementById('nav');
@@ -55,9 +61,15 @@ function render() {
   viewEl.replaceChildren(currentRoute().render(render));
 }
 
+const sidebar = document.getElementById('sidebar');
+document.getElementById('nav-toggle').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+});
+
 window.addEventListener('hashchange', () => {
+  sidebar.classList.remove('open');
   render();
-  viewEl.scrollTop = 0;
+  window.scrollTo(0, 0);
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
@@ -66,6 +78,28 @@ document.getElementById('reset-btn').addEventListener('click', () => {
     location.hash = '#/';
     render();
   }
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const blob = new Blob([exportJson()], { type: 'application/json' });
+  const a = el('a', { href: URL.createObjectURL(blob), download: 'profileme-export.json' });
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+const importFile = document.getElementById('import-file');
+document.getElementById('import-btn').addEventListener('click', () => importFile.click());
+importFile.addEventListener('change', async () => {
+  const file = importFile.files[0];
+  if (!file) return;
+  try {
+    importJson(await file.text());
+    render();
+    alert('Profile imported.');
+  } catch {
+    alert('Could not import that file — it does not look like a ProfileMe export.');
+  }
+  importFile.value = '';
 });
 
 render();

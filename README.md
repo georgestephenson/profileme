@@ -31,13 +31,16 @@ dashboard with analysis and science-informed recommendations.
 | Personality | IPIP 50-item Big Five factor markers + optional Honesty-Humility (HEXACO) supplement | Public-domain (Goldberg, ipip.ori.org); HEXACO sixth factor (Ashton & Lee) |
 | Body | BMI, waist-to-height ratio | Standard population screens; WHtR < 0.5 guideline |
 | Cardio fitness | Cooper 12-minute run or 5k time → VO2max, or resting heart rate | Cooper (1968); Daniels & Gilbert VDOT; ACSM-style age/sex ratings |
-| Strength & function | Push-ups, pull-ups, plank, vertical jump, one-leg balance, toe-touch, five barbell lifts (squat/bench/deadlift/press/row) | Strength standards; Araujo et al. (2022) balance-mortality finding |
-| Finances | Savings rate, emergency fund, debt-to-income, net worth vs. age; user-selected display currency | Standard personal-finance metrics |
+| Strength & function | Push-ups, pull-ups, plank, calf raises, vertical jump, one-leg balance, toe-touch, six barbell lifts entered as any weight × reps (Epley 1RM) | Strength standards; Epley formula; Araujo et al. (2022) balance-mortality finding |
+| Finances | Savings rate, emergency fund, debt-to-income, net worth vs. age; user currency (Intl-formatted); income vs. your country via live World Bank GDP-per-capita data | Standard personal-finance metrics; World Bank API + ECB reference rates |
 | Cognition | 36-item ability battery (verbal knowledge, series, analogies, matrix reasoning) + digit span + reaction time | ICAR-format items (Condon & Revelle, 2014); reported as an estimated range with provisional norms |
 | Career & education | Structured self-report (education, experience, satisfaction, learning, network) | Heuristic, labeled as such |
 | Languages | CEFR self-assessment per language | Council of Europe CEFR framework |
 | Relationships | UCLA-3 loneliness scale, social + family contact, relationship satisfaction | Hughes et al. (2004); relationship-quality well-being findings |
 | Grooming | 8 upkeep-habit items (oral care, SPF, presentation) | Oral-systemic health links; Hughes et al. (2013) sunscreen RCT; person-perception findings |
+| Well-being | Satisfaction With Life Scale + sleep | Diener et al. (1985), free-to-use validated instrument; AASM/SRS sleep consensus |
+| Background & mobility | MacArthur ladder (childhood vs. now) + intergenerational education | Adler et al. (2000) subjective social status research |
+| Politics | 16 original items on two axes (economic left-right, social libertarian-authoritarian) | Standard two-dimensional structure from political psychology; a profile, never graded or included in the composite |
 
 ## Synthesis
 
@@ -68,6 +71,15 @@ and get quantified projections — earnings-uplift ranges from a transparent lev
 model, strength/VO2max gain ranges from published trainability data, 10-year
 compound wealth projections, and FSI-derived language timelines. Every plan
 states its evidence basis and is presented as a range, not a promise.
+
+Each module also shows a **breakdown radar** of the sub-dimensions behind its
+score (fitness splits into cardio/push/pull/lower/core/power/balance/
+flexibility; cognition into battery sections plus memory and speed; and so on),
+and fitness renders a **color-coded muscle map** built from the exercises you
+log. The dashboard offers a **shareable summary image** (canvas-rendered PNG,
+branded geosona.com/profileme) containing only the scores shown on screen —
+politics is never included. Profiles can be **exported/imported as JSON**, and
+on mobile the navigation collapses behind a menu button.
 
 ## Running it
 

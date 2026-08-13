@@ -4,12 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ProfileMe — Know yourself, systematically</title>
+  <meta name="description" content="Profile yourself across personality, cognition, fitness, finances, career, languages, relationships and more — with validated instruments, honest science, and evidence-based plans. All data stays in your browser.">
+  <meta property="og:title" content="ProfileMe — Know yourself, systematically">
+  <meta property="og:description" content="Science-grounded self-profiling: Big Five personality, cognitive battery, fitness benchmarks, financial health, and a synthesis of it all. Private by design.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://geosona.com/profileme/">
+  <meta name="twitter:card" content="summary">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='none' stroke='%232563eb' stroke-width='10'/><circle cx='50' cy='50' r='14' fill='%232563eb'/></svg>">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <button id="nav-toggle" class="nav-toggle" aria-label="Menu">☰ Menu</button>
   <div class="layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="brand">
         <span class="brand-mark">◎</span>
         <div>
@@ -20,7 +27,12 @@
       <nav id="nav"></nav>
       <div class="sidebar-footer">
         <p>All data stays in your browser.<br>Nothing is sent anywhere.</p>
-        <button id="reset-btn" class="btn-danger-ghost">Reset all data</button>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+          <button id="export-btn" class="btn-ghost">Export</button>
+          <button id="import-btn" class="btn-ghost">Import</button>
+          <button id="reset-btn" class="btn-danger-ghost">Reset</button>
+        </div>
+        <input type="file" id="import-file" accept="application/json" style="display:none">
       </div>
     </aside>
     <main id="view" class="view"></main>

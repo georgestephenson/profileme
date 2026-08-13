@@ -1,5 +1,6 @@
 import { el, card, numberField, selectField, saveBar } from '../ui.js';
 import { getProfile, update } from '../store.js';
+import { breakdownRadar } from '../radar.js';
 
 export function renderCareer(rerender) {
   const draft = {
@@ -8,10 +9,21 @@ export function renderCareer(rerender) {
     ...(getProfile().career || {}),
   };
 
+  const saved = getProfile().career;
+  const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+  const radar = saved ? breakdownRadar([
+    { label: 'Credentials', value: clamp(({ none: 10, secondary: 30, vocational: 45, bachelor: 60, master: 75, doctorate: 90 }[saved.education] ?? 30) + clamp((saved.yearsExperience ?? 0) * 4, 0, 40), 0, 100) },
+    { label: 'Satisfaction', value: saved.satisfaction ? clamp(saved.satisfaction * 10, 0, 100) : null },
+    { label: 'Learning', value: clamp((saved.learningHours ?? 0) * 12 + 40, 0, 100) },
+    { label: 'Network', value: clamp((saved.hasMentor ? 60 : 20) + clamp((saved.closeProfessionalContacts ?? 0) * 6, 0, 60), 0, 100) },
+  ]) : null;
+
   return el('div', {},
     el('h2', {}, 'Career & education'),
     el('p', { class: 'view-intro' },
       'Structured self-report on where you stand professionally. Scored with a transparent heuristic (education + experience, satisfaction, deliberate learning, mentorship + network) — there is no validated single instrument for "career positioning", so we do not pretend otherwise.'),
+    radar && card('Career breakdown', radar,
+      el('p', { class: 'hint' }, 'The sub-dimensions behind your career score.')),
     card(null,
       selectField({
         label: 'Highest completed education',

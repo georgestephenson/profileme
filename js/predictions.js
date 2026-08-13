@@ -2,7 +2,7 @@
 // stated, built from published effect sizes and standard progression models —
 // not point predictions. Where evidence is weak we say "heuristic".
 
-import { vo2maxFromCooper, vdotFrom5k, rateVo2max, ratePushups, ratePullups, rateLift } from './data/benchmarks.js';
+import { vo2maxFromCooper, vdotFrom5k, rateVo2max, ratePushups, ratePullups, rateLift, oneRepMax } from './data/benchmarks.js';
 import { normalCdf } from './data/cognitive.js';
 
 const fmt = (n) => Math.round(n).toLocaleString();
@@ -72,11 +72,12 @@ export function strengthPotential(profile) {
   const age = profile.basics?.age ?? 30, sex = profile.basics?.sex ?? 'male';
 
   const ratings = [];
+  const bw = profile.basics?.weightKg ?? f.bodyweightKg ?? null;
   if (f.pushups !== null && f.pushups !== undefined) ratings.push(ratePushups(f.pushups, age, sex));
   if (f.pullups !== null && f.pullups !== undefined) ratings.push(ratePullups(f.pullups, age, sex));
-  if (f.bodyweightKg) {
-    for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row']) {
-      if (f[`${lift}Kg`]) ratings.push(rateLift(lift, f[`${lift}Kg`], f.bodyweightKg, sex));
+  if (bw) {
+    for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row', 'curl']) {
+      if (f[`${lift}Kg`]) ratings.push(rateLift(lift, oneRepMax(f[`${lift}Kg`], f[`${lift}Reps`] || 1), bw, sex));
     }
   }
   if (!ratings.length) return null;

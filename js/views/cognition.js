@@ -2,6 +2,7 @@ import { el, card, statCard } from '../ui.js';
 import { getProfile, update } from '../store.js';
 import { rateDigitSpan, rateReactionTime, RATING_LABELS, ratingClass } from '../data/benchmarks.js';
 import { SECTIONS, scoreBattery } from '../data/cognitive.js';
+import { breakdownRadar } from '../radar.js';
 
 export function renderCognition(rerender) {
   const saved = getProfile().cognition || {};
@@ -37,6 +38,22 @@ export function renderCognition(rerender) {
     stats.push(statCard({ label: 'Reaction time', value: `${Math.round(saved.reactionMs)} ms`, sub: `median of 5 — ${RATING_LABELS[r]}`, tone: ratingClass(r) }));
   }
   if (stats.length) container.append(card('Your results', el('div', { class: 'stat-grid' }, stats)));
+
+  // Breakdown radar: battery sections + memory + speed
+  const sub = [];
+  if (saved.battery) {
+    for (const s of SECTIONS) {
+      const p = saved.battery.parts[s.key];
+      if (p) sub.push({ label: s.title.replace('Letter & number', 'Number'), value: (p.correct / p.total) * 100 });
+    }
+  }
+  if (saved.digitSpan) sub.push({ label: 'Working memory', value: rateDigitSpan(saved.digitSpan) * 25 });
+  if (saved.reactionMs) sub.push({ label: 'Speed', value: rateReactionTime(saved.reactionMs) * 25 });
+  const radar = breakdownRadar(sub);
+  if (radar) {
+    container.append(card('Cognition breakdown', radar,
+      el('p', { class: 'hint' }, 'Battery sections show percent correct; memory and speed show benchmark ratings.')));
+  }
 
   container.append(batteryTask(saved, rerender));
   container.append(digitSpanTask(saved, rerender));

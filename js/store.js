@@ -12,7 +12,10 @@ const defaults = () => ({
   relationships: null, // { ucla: [1..3 x3], closeFriends, weeklyInteractions }
   goals: null,         // { selected: [goalKey] }
   grooming: null,      // { answers: {itemId: 1..5}, completedAt }
-  settings: null,      // { currency: 'USD' }
+  wellbeing: null,     // { swls: [1..7 x5], sleepHours, completedAt }
+  background: null,    // { childhoodLadder, currentLadder, parentEducation, firstGenUniversity }
+  politics: null,      // { answers: {itemId: -2..2}, completedAt } — profile only, never scored
+  settings: null,      // { currency, country }
 });
 
 let state = load();
@@ -42,4 +45,17 @@ export function update(section, value) {
 export function resetAll() {
   state = defaults();
   localStorage.removeItem(KEY);
+}
+
+export function exportJson() {
+  return JSON.stringify(state, null, 2);
+}
+
+export function importJson(text) {
+  const data = JSON.parse(text); // throws on invalid JSON
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    throw new Error('Not a ProfileMe export');
+  }
+  state = { ...defaults(), ...data };
+  persist();
 }

@@ -32,5 +32,15 @@ export function setCurrency(code) {
 }
 
 export function money(n) {
-  return `${getCurrency().symbol}${Math.round(n).toLocaleString()}`;
+  const c = getCurrency();
+  if (c.code === 'none') return Math.round(n).toLocaleString();
+  try {
+    // Intl gives the correct symbol placement and decimal rules per currency
+    // (e.g. JPY/KRW take no decimals). Whole units for readability.
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency', currency: c.code, maximumFractionDigits: 0,
+    }).format(n);
+  } catch {
+    return `${c.symbol}${Math.round(n).toLocaleString()}`;
+  }
 }

@@ -65,6 +65,17 @@ export function ratePlank(seconds) {
   return bandRating(seconds, [15, 30, 60, 120]);
 }
 
+// Epley formula: estimated one-rep max from a weight lifted for N reps.
+export function oneRepMax(weightKg, reps) {
+  if (!reps || reps <= 1) return weightKg;
+  return weightKg * (1 + Math.min(reps, 15) / 30);
+}
+
+// Single-leg calf raises to fatigue (heel-raise test).
+export function rateCalfRaises(reps) {
+  return bandRating(reps, [5, 12, 20, 30]);
+}
+
 export function ratePullups(count, age, sex) {
   const decades = Math.max(0, (age - 25) / 10);
   const base = sex === 'female' ? [1, 2, 5, 10] : [3, 6, 10, 15];
@@ -104,8 +115,8 @@ export function rateToeTouch(value) {
 // Lift ratings by bodyweight multiple (community strength standards, roughly
 // untrained -> novice -> intermediate -> advanced boundaries).
 const LIFT_STANDARDS = {
-  male:   { squat: [0.75, 1.0, 1.25, 1.75], bench: [0.6, 0.8, 1.0, 1.5], deadlift: [1.0, 1.25, 1.5, 2.25], press: [0.35, 0.5, 0.65, 0.9], row: [0.5, 0.7, 0.9, 1.2] },
-  female: { squat: [0.5, 0.75, 1.0, 1.5],   bench: [0.35, 0.5, 0.7, 1.0], deadlift: [0.7, 1.0, 1.2, 1.75], press: [0.25, 0.35, 0.45, 0.65], row: [0.35, 0.5, 0.65, 0.9] },
+  male:   { squat: [0.75, 1.0, 1.25, 1.75], bench: [0.6, 0.8, 1.0, 1.5], deadlift: [1.0, 1.25, 1.5, 2.25], press: [0.35, 0.5, 0.65, 0.9], row: [0.5, 0.7, 0.9, 1.2], curl: [0.2, 0.3, 0.4, 0.55] },
+  female: { squat: [0.5, 0.75, 1.0, 1.5],   bench: [0.35, 0.5, 0.7, 1.0], deadlift: [0.7, 1.0, 1.2, 1.75], press: [0.25, 0.35, 0.45, 0.65], row: [0.35, 0.5, 0.65, 0.9], curl: [0.12, 0.2, 0.28, 0.4] },
 };
 
 export function rateLift(lift, weightKg, bodyweightKg, sex) {

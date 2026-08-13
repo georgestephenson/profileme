@@ -4,9 +4,10 @@
 
 import { scoreIpip, scoreHH } from './data/ipip.js';
 import { scoreGrooming } from './data/grooming.js';
+import { scoreWellbeing } from './views/wellbeing.js';
 import {
   vo2maxFromCooper, vdotFrom5k, rateVo2max, rateRestingHr, ratePushups, ratePullups,
-  ratePlank, rateLift, rateVerticalJump, rateBalance, rateToeTouch,
+  ratePlank, rateLift, rateVerticalJump, rateBalance, rateToeTouch, rateCalfRaises, oneRepMax,
   financeMetrics, rateSavingsRate, rateEmergencyFund, rateDebtToIncome,
   expectedNetWorth, rateDigitSpan, rateReactionTime, cefrPoints,
 } from './data/benchmarks.js';
@@ -45,19 +46,21 @@ export function computeScores(profile) {
   if (profile.fitness) {
     const f = profile.fitness;
     const parts = [];
+    const bw = basics?.weightKg ?? f.bodyweightKg ?? null;
     if (f.cooperMeters) parts.push(ratingToScore(rateVo2max(vo2maxFromCooper(f.cooperMeters), age, sex)));
     if (f.fiveKMin) parts.push(ratingToScore(rateVo2max(vdotFrom5k(f.fiveKMin), age, sex)));
     if (f.restingHr) parts.push(ratingToScore(rateRestingHr(f.restingHr)));
     if (f.pushups !== null && f.pushups !== undefined) parts.push(ratingToScore(ratePushups(f.pushups, age, sex)));
     if (f.pullups !== null && f.pullups !== undefined) parts.push(ratingToScore(ratePullups(f.pullups, age, sex)));
     if (f.plankSec) parts.push(ratingToScore(ratePlank(f.plankSec)));
+    if (f.calfRaises) parts.push(ratingToScore(rateCalfRaises(f.calfRaises)));
     if (f.verticalJumpCm) parts.push(ratingToScore(rateVerticalJump(f.verticalJumpCm, age, sex)));
     if (f.balanceSec) parts.push(ratingToScore(rateBalance(f.balanceSec)));
     if (f.toeTouch) parts.push(ratingToScore(rateToeTouch(f.toeTouch)));
-    if (f.bodyweightKg) {
-      for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row']) {
+    if (bw) {
+      for (const lift of ['squat', 'bench', 'deadlift', 'press', 'row', 'curl']) {
         const w = f[`${lift}Kg`];
-        if (w) parts.push(ratingToScore(rateLift(lift, w, f.bodyweightKg, sex)));
+        if (w) parts.push(ratingToScore(rateLift(lift, oneRepMax(w, f[`${lift}Reps`] || 1), bw, sex)));
       }
     }
     scores.fitness = avg(parts);
@@ -140,6 +143,9 @@ export function computeScores(profile) {
     ? scoreGrooming(profile.grooming.answers)
     : null;
 
+  // Well-being
+  scores.wellbeing = scoreWellbeing(profile.wellbeing)?.score ?? null;
+
   // Composite: equal-weighted mean of every available component. One number
   // for the gamified overview — the per-domain picture is the real content.
   const componentKeys = [...Object.keys(DOMAIN_LABELS), 'personalityAssets'];
@@ -159,6 +165,7 @@ export const DOMAIN_LABELS = {
   languages: 'Languages',
   relationships: 'Relationships',
   grooming: 'Grooming',
+  wellbeing: 'Well-being',
 };
 
 export const COMPONENT_LABELS = {
@@ -320,6 +327,30 @@ const RULES = [
       return {
         text: 'Add a daily SPF 30+ moisturizer to your morning routine.',
         why: 'Daily sunscreen measurably slowed skin aging in a randomized controlled trial (Hughes et al., 2013) and cuts skin-cancer risk — the best-evidenced appearance intervention there is.',
+      };
+    },
+  },
+  {
+    domain: 'Well-being',
+    apply(p) {
+      const w = p.wellbeing;
+      if (!w?.swls || w.swls.some((v) => !v)) return null;
+      const total = w.swls.reduce((a, b) => a + b, 0);
+      if (total >= 20) return null;
+      return {
+        text: 'Your life-satisfaction score is in the dissatisfied range. The best-evidenced levers are social connection, regular exercise, sleep, and work that feels meaningful — and if low mood is persistent, talking to a professional is a strength, not a failure.',
+        why: 'The SWLS is a validated screen, not a diagnosis; meta-analyses show exercise and social connection reliably improve subjective well-being.',
+      };
+    },
+  },
+  {
+    domain: 'Well-being',
+    apply(p) {
+      const h = p.wellbeing?.sleepHours;
+      if (!h || (h >= 7 && h <= 9)) return null;
+      return {
+        text: `You report ${h} hours of sleep. Target 7-9: fixed wake time, no screens in the last 30 minutes, and a cool dark room are the highest-yield changes.`,
+        why: 'Short sleep is causally linked to worse cognition, mood, metabolic health, and immune function; 7-9 hours is the AASM/SRS adult consensus.',
       };
     },
   },

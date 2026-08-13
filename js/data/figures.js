@@ -33,16 +33,23 @@ export function matchFigures(userTraits, userDomains = {}, topN = 3) {
   const dims = traitKeys.length + domainKeys.length;
   if (dims < 3) return null;
 
-  return {
-    dimensions: dims,
-    matches: FIGURES
-      .map((f) => {
-        let dist = 0;
-        for (const k of traitKeys) dist += Math.abs(userTraits[k] - f.traits[k]);
-        for (const k of domainKeys) dist += Math.abs(userDomains[k] - f.domains[k]);
-        return { ...f, similarity: Math.round(100 - dist / dims), composite: figureComposite(f) };
-      })
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, topN),
-  };
+  const ranked = FIGURES
+    .map((f) => {
+      let dist = 0;
+      for (const k of traitKeys) dist += Math.abs(userTraits[k] - f.traits[k]);
+      for (const k of domainKeys) dist += Math.abs(userDomains[k] - f.domains[k]);
+      return { ...f, similarity: Math.round(100 - dist / dims), composite: figureComposite(f) };
+    })
+    .sort((a, b) => b.similarity - a.similarity);
+
+  // Guarantee both genders appear: if the top N is single-gender, the last
+  // slot goes to the best match of the missing gender.
+  const matches = ranked.slice(0, topN);
+  for (const g of ['f', 'm']) {
+    if (!matches.some((x) => x.g === g)) {
+      const best = ranked.find((x) => x.g === g);
+      if (best) matches[matches.length - 1] = best;
+    }
+  }
+  return { dimensions: dims, matches };
 }

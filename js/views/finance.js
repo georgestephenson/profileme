@@ -1,6 +1,8 @@
 import { el, card, numberField, selectField, saveBar, statCard } from '../ui.js';
 import { getProfile, update } from '../store.js';
 import { CURRENCIES, getCurrency, setCurrency, money } from '../currency.js';
+import { COUNTRIES, fetchGdpPerCapita, fetchUsdRate, incomeVsCountry } from '../countrydata.js';
+import { breakdownRadar } from '../radar.js';
 import {
   financeMetrics, rateSavingsRate, rateEmergencyFund, rateDebtToIncome,
   expectedNetWorth, RATING_LABELS, ratingClass,
@@ -18,13 +20,75 @@ export function renderFinance(rerender) {
     el('h2', {}, 'Finances'),
     el('p', { class: 'view-intro' },
       'Standard personal-finance health metrics: savings rate, emergency-fund coverage, debt load, and net worth versus an age-and-income expectation. Amounts are never converted — pick your currency once and it is used everywhere money appears.'),
-    card('Currency',
+    card('Currency & country',
       selectField({
         label: 'Display currency',
         value: getCurrency().code,
         options: CURRENCIES.map((c) => ({ value: c.code, label: c.label })),
         onChange: (v) => { setCurrency(v); rerender(); },
+      }),
+      selectField({
+        label: 'Country',
+        sub: 'Used to compare your income against live national economic data (World Bank).',
+        value: profile.settings?.country ?? '',
+        options: [{ value: '', label: '— select —' }, ...COUNTRIES.map(([name, iso3]) => ({ value: iso3, label: name }))],
+        onChange: (v) => {
+          update('settings', { ...(profile.settings || {}), country: v || null, countryStats: null });
+          rerender();
+        },
       })));
+
+  // Country comparison (live World Bank data, cached after first fetch)
+  const country = profile.settings?.country;
+  if (country && profile.finance?.monthlyIncome) {
+    const cached = profile.settings?.countryStats;
+    const compareCard = card('Your income vs your country', el('p', { class: 'empty-note' }, 'Loading live data…'));
+    container.append(compareCard);
+    const renderComparison = (stats) => {
+      const annualLocal = profile.finance.monthlyIncome * 12;
+      const annualUsd = annualLocal * stats.usdRate;
+      const ratio = annualUsd / stats.gdpPcPpp;
+      const band = incomeVsCountry(ratio);
+      compareCard.replaceChildren(
+        el('h3', {}, 'Your income vs your country'),
+        el('div', { class: 'stat-grid' },
+          statCard({
+            label: 'Your income vs national avg', value: `${ratio.toFixed(1)}×`,
+            sub: band.label, tone: band.tone,
+          }),
+          statCard({
+            label: `${stats.countryName} GDP per capita`,
+            value: `$${Math.round(stats.gdpPcPpp).toLocaleString()}`,
+            sub: `PPP int'l $, ${stats.year} (World Bank)`,
+          }),
+          statCard({
+            label: 'Your annual income', value: `≈ $${Math.round(annualUsd).toLocaleString()}`,
+            sub: 'converted at current exchange rates',
+          })),
+        el('p', { class: 'hint' },
+          'GDP per capita is average output per person, not average salary — most people earn somewhat less than it, so matching it puts you above the typical earner. Market exchange rates are a rough proxy for purchasing-power dollars. Live data from the World Bank API and ECB reference rates; only your country and currency codes are sent, never your data.'));
+    };
+    if (cached && cached.iso3 === country && cached.currency === getCurrency().code) {
+      renderComparison(cached);
+    } else {
+      Promise.all([fetchGdpPerCapita(country), fetchUsdRate(getCurrency().code)])
+        .then(([gdp, usdRate]) => {
+          const stats = {
+            iso3: country, currency: getCurrency().code,
+            gdpPcPpp: gdp.gdpPcPpp, year: gdp.year, countryName: gdp.country, usdRate,
+            fetchedAt: new Date().toISOString(),
+          };
+          update('settings', { ...(getProfile().settings || {}), countryStats: stats });
+          renderComparison(stats);
+        })
+        .catch(() => {
+          compareCard.replaceChildren(
+            el('h3', {}, 'Your income vs your country'),
+            el('p', { class: 'empty-note' },
+              'Could not fetch live country data right now (your currency may not have an ECB exchange rate, or the API is unreachable). Your profile is unaffected — try again later.'));
+        });
+    }
+  }
 
   if (profile.finance) {
     const m = financeMetrics(profile.finance);
@@ -52,6 +116,21 @@ export function renderFinance(rerender) {
       }));
     }
     if (stats.length) container.append(card('Your results', el('div', { class: 'stat-grid' }, stats)));
+
+    const expected = profile.basics?.age && m.annualIncome > 0
+      ? expectedNetWorth(profile.basics.age, m.annualIncome) : null;
+    const nwScore = expected && profile.finance.netWorth !== null && profile.finance.netWorth !== undefined
+      ? Math.max(0, Math.min(100, (profile.finance.netWorth / Math.max(1, expected)) * 50)) : null;
+    const radar = breakdownRadar([
+      { label: 'Savings rate', value: m.savingsRate !== null ? rateSavingsRate(m.savingsRate) * 25 : null },
+      { label: 'Emergency fund', value: m.emergencyMonths !== null ? rateEmergencyFund(m.emergencyMonths) * 25 : null },
+      { label: 'Low debt', value: m.debtToIncome !== null ? rateDebtToIncome(m.debtToIncome) * 25 : null },
+      { label: 'Net worth', value: nwScore },
+    ]);
+    if (radar) {
+      container.append(card('Finance breakdown', radar,
+        el('p', { class: 'hint' }, 'The sub-dimensions behind your finances score.')));
+    }
   }
 
   container.append(card('Inputs',

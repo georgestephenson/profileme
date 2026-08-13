@@ -1,6 +1,7 @@
 import { el, card, traitBar } from '../ui.js';
 import { getProfile, update } from '../store.js';
 import { ITEMS, LIKERT, TRAITS, TRAIT_DESCRIPTIONS, scoreIpip, HH_ITEMS, scoreHH } from '../data/ipip.js';
+import { breakdownRadar } from '../radar.js';
 
 export function renderPersonality(rerender) {
   const saved = getProfile().personality;
@@ -13,6 +14,21 @@ export function renderPersonality(rerender) {
 
   const traits = saved?.answers ? scoreIpip(saved.answers) : null;
   const hhScore = saved?.hhAnswers ? scoreHH(saved.hhAnswers) : null;
+  if (traits) {
+    const radar = breakdownRadar([
+      { label: 'Extraversion', value: traits.E },
+      { label: 'Agreeableness', value: traits.A },
+      { label: 'Conscientious', value: traits.C },
+      { label: 'Stability', value: traits.N },
+      { label: 'Openness', value: traits.O },
+      hhScore !== null ? { label: 'Honesty', value: hhScore } : null,
+    ].filter(Boolean));
+    if (radar) {
+      container.append(card('Trait shape', radar,
+        el('p', { class: 'hint' }, 'Your personality as a shape, not a score — there is no "good" polygon here.')));
+    }
+  }
+
   if (traits || hhScore !== null) {
     container.append(card('Your trait profile',
       traits ? Object.keys(TRAITS).map((t) =>

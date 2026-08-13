@@ -121,6 +121,15 @@ input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color:
 .btn:hover { filter: brightness(1.08); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
 .btn-danger-ghost {
   background: none;
   border: 1px solid var(--border);
@@ -285,8 +294,68 @@ table.simple { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 table.simple th, table.simple td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); }
 table.simple th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-soft); }
 
+/* ---------- Mobile nav ---------- */
+.nav-toggle { display: none; }
+
 @media (max-width: 760px) {
+  .nav-toggle {
+    display: block;
+    position: fixed;
+    top: 0.7rem;
+    left: 0.7rem;
+    z-index: 60;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
   .layout { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; position: static; }
-  .view { padding: 1.2rem 1rem 3rem; }
+  .sidebar {
+    position: fixed;
+    inset: 0 25% 0 0;
+    min-width: 250px;
+    height: 100vh;
+    z-index: 50;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: 4px 0 20px rgba(16, 24, 40, 0.15);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .view { padding: 3.6rem 1rem 3rem; }
+}
+
+/* ---------- Landing hero ---------- */
+.hero {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 2rem 1.8rem;
+  margin-bottom: 1.2rem;
+}
+.hero h3 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+.hero p { opacity: 0.92; max-width: 60ch; margin-bottom: 0.4rem; font-size: 0.95rem; }
+.hero .btn { background: #fff; color: var(--accent); margin-top: 0.8rem; }
+
+/* ---------- Muscle map ---------- */
+.muscle-map-wrap { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+.muscle-map-wrap svg { width: 150px; height: auto; }
+.muscle-legend { display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center; font-size: 0.72rem; color: var(--text-soft); margin-top: 0.6rem; }
+.muscle-legend span::before { content: '●'; margin-right: 0.25rem; }
+
+/* ---------- Political compass ---------- */
+.compass-wrap { display: flex; justify-content: center; }
+.compass-wrap svg { max-width: 380px; width: 100%; height: auto; }
+
+/* ---------- Share card ---------- */
+.share-preview { display: flex; justify-content: center; }
+.share-preview canvas {
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
 }
